@@ -143,6 +143,7 @@ a:hover { color: var(--accent-hover); }
 
 /* ===== CARDS ===== */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; padding: 1rem 0; }
+.card-grid-4 { grid-template-columns: repeat(4, 1fr); }
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -288,7 +289,7 @@ a:hover { color: var(--accent-hover); }
   .hero.has-photo { flex-direction: column; text-align: center; gap: 1.5rem; }
   .hero-photo img { width: 160px; }
   .hero h1 { font-size: 1.8rem; }
-  .card-grid { grid-template-columns: 1fr; }
+  .card-grid, .card-grid-4 { grid-template-columns: 1fr; }
   .resume-entry-header { flex-direction: column; }
   .resume-entry-header .dates { font-size: .85rem; }
 }
