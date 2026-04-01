@@ -93,6 +93,9 @@ a:hover { color: var(--accent-hover); }
 .hero { text-align: center; padding: 3rem 0 2rem; }
 .hero h1 { font-size: 2.4rem; font-weight: 700; color: var(--text); margin-bottom: .4rem; }
 .hero .subtitle { font-size: 1.05rem; color: var(--text-dim); font-style: italic; }
+.social-links { display: flex; gap: .8rem; margin-top: .7rem; }
+.social-links a { color: var(--text-muted); transition: color .2s; line-height: 1; }
+.social-links a:hover { color: var(--accent); }
 
 .hero.has-photo {
   display: flex; align-items: center; gap: 2.5rem;
