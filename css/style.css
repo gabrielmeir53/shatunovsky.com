@@ -111,6 +111,36 @@ a:hover { color: var(--accent-hover); }
 .bio p { margin-bottom: 1.2rem; color: var(--text); }
 .bio p:last-child { margin-bottom: 0; }
 
+/* ===== BEYOND THE LAW ===== */
+.beyond { padding: 1rem 0 2rem; }
+.beyond > p { color: var(--text-dim); margin-bottom: 1.5rem; }
+.subsection-title {
+  font-size: .95rem; font-weight: 700;
+  color: var(--text); margin-bottom: 1rem;
+}
+.project-card {
+  display: flex; align-items: flex-start; gap: 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.4rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform .2s, box-shadow .2s;
+}
+.project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  color: var(--text);
+}
+.project-logo {
+  width: 56px; height: 56px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+.project-info h4 { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: .3rem; }
+.project-info p { font-size: .9rem; color: var(--text-dim); line-height: 1.55; }
+
 /* ===== CARDS ===== */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; padding: 1rem 0; }
 .card {
@@ -254,6 +284,7 @@ a:hover { color: var(--accent-hover); }
     gap: .8rem;
   }
   .nav-hamburger { display: block; }
+  .project-card { flex-direction: row; }
   .hero.has-photo { flex-direction: column; text-align: center; gap: 1.5rem; }
   .hero-photo img { width: 160px; }
   .hero h1 { font-size: 1.8rem; }
