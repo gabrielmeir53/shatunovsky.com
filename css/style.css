@@ -94,6 +94,18 @@ a:hover { color: var(--accent-hover); }
 .hero h1 { font-size: 2.4rem; font-weight: 700; color: var(--text); margin-bottom: .4rem; }
 .hero .subtitle { font-size: 1.05rem; color: var(--text-dim); font-style: italic; }
 
+.hero.has-photo {
+  display: flex; align-items: center; gap: 2.5rem;
+  text-align: left;
+}
+.hero-photo img {
+  width: 200px; height: auto;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+.hero-text { flex: 1; }
+
 /* ===== BIO ===== */
 .bio { padding: 1rem 0 2.5rem; }
 .bio p { margin-bottom: 1.2rem; color: var(--text); }
@@ -242,6 +254,8 @@ a:hover { color: var(--accent-hover); }
     gap: .8rem;
   }
   .nav-hamburger { display: block; }
+  .hero.has-photo { flex-direction: column; text-align: center; gap: 1.5rem; }
+  .hero-photo img { width: 160px; }
   .hero h1 { font-size: 1.8rem; }
   .card-grid { grid-template-columns: 1fr; }
   .resume-entry-header { flex-direction: column; }
