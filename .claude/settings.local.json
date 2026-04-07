@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git rebase:*)",
+      "Bash(ssh ysf:*)",
+      "Bash(rsync:*)",
+      "Bash(curl -sI https://www.shatunovsky.com)",
+      "Bash(curl -sI https://shatunovsky.com)"
+    ]
+  }
+}
