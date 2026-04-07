@@ -145,28 +145,41 @@ a:hover { color: var(--accent-hover); }
 .project-info p { font-size: .9rem; color: var(--text-dim); line-height: 1.55; }
 
 /* ===== CARDS ===== */
-.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; padding: 1rem 0; }
+.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 1rem 0; }
 .card-grid-4 { grid-template-columns: repeat(4, 1fr); }
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1.5rem;
+  border-radius: 8px;
+  padding: 1.25rem 1.4rem 1.1rem;
   text-decoration: none;
   color: var(--text);
-  transition: transform .2s, box-shadow .2s;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .2s, transform .15s, border-color .2s;
 }
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.09);
+  border-color: rgba(27,58,92,.22);
   color: var(--text);
 }
 .card h3 {
-  font-size: 1.05rem; font-weight: 700;
-  color: var(--accent); margin-bottom: .4rem;
+  font-size: .95rem; font-weight: 700;
+  color: var(--accent); margin-bottom: .25rem;
+  letter-spacing: .01em;
 }
-.card p { font-size: .9rem; color: var(--text-dim); line-height: 1.5; }
-.card .arrow { color: var(--accent); font-size: .85rem; margin-top: .6rem; display: block; }
+.card p { font-size: .875rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
+.card .arrow {
+  color: var(--accent);
+  font-size: .85rem;
+  margin-top: .85rem;
+  display: block;
+  align-self: flex-end;
+  opacity: .65;
+  transition: transform .2s, opacity .2s;
+}
+.card:hover .arrow { transform: translateX(4px); opacity: 1; }
 
 /* ===== SECTION HEADINGS ===== */
 .section-title {
