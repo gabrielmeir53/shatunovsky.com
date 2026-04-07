@@ -122,7 +122,7 @@ a:hover { color: var(--accent-hover); }
   color: var(--text); margin-bottom: 1rem;
 }
 .project-card {
-  display: flex; align-items: flex-start; gap: 1.2rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1.2rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -137,8 +137,7 @@ a:hover { color: var(--accent-hover); }
   color: var(--text);
 }
 .project-logo {
-  width: 288px; height: 288px;
-  flex-shrink: 0;
+  width: 150px; height: auto;
   border-radius: 4px;
 }
 .project-info h4 { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: .3rem; }
