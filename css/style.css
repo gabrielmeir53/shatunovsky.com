@@ -137,7 +137,7 @@ a:hover { color: var(--accent-hover); }
   color: var(--text);
 }
 .project-logo {
-  width: 96px; height: 96px;
+  width: 288px; height: 288px;
   flex-shrink: 0;
   border-radius: 4px;
 }
