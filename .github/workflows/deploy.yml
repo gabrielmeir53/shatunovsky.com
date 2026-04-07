@@ -1,0 +1,39 @@
+name: Validate & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install HTMLHint
+        run: npm install -g htmlhint
+
+      - name: Validate HTML
+        run: htmlhint "**/*.html" --config .htmlhintrc
+
+      - name: Deploy to Droplet
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 104.131.45.126 >> ~/.ssh/known_hosts
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.htmlhintrc' \
+            ./ root@104.131.45.126:/var/www/shatunovsky.com/
