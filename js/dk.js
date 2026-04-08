@@ -17,16 +17,20 @@
 
     var overlay = document.createElement('div');
     overlay.id = 'dk-overlay';
+    overlay.tabIndex = -1;
     overlay.style.cssText =
       'position:fixed;inset:0;z-index:9999;background:#000;display:flex;' +
-      'align-items:center;justify-content:center;flex-direction:column;';
+      'align-items:center;justify-content:center;flex-direction:column;outline:none;';
 
     var close = document.createElement('button');
     close.textContent = '\u2715';
     close.style.cssText =
       'position:absolute;top:12px;right:18px;font-size:28px;color:#fff;' +
       'background:none;border:none;cursor:pointer;z-index:10000;';
-    close.addEventListener('click', teardown);
+    close.addEventListener('click', function () {
+      teardown();
+    });
+    close.addEventListener('mousedown', function (e) { e.preventDefault(); });
 
     var info = document.createElement('div');
     info.style.cssText = 'color:#555;font-size:12px;margin-top:8px;font-family:monospace;';
@@ -41,6 +45,7 @@
     overlay.appendChild(canvas);
     overlay.appendChild(info);
     document.body.appendChild(overlay);
+    overlay.focus();
     document.addEventListener('keydown', escHandler);
 
     var ctx = canvas.getContext('2d');
@@ -53,6 +58,7 @@
     document.head.appendChild(script);
 
     var nes;
+    var map;
 
     function loadRom() {
       var xhr = new XMLHttpRequest();
@@ -70,6 +76,17 @@
     }
 
     function startEmulator(romData) {
+      map = {
+        38: jsnes.Controller.BUTTON_UP,
+        40: jsnes.Controller.BUTTON_DOWN,
+        37: jsnes.Controller.BUTTON_LEFT,
+        39: jsnes.Controller.BUTTON_RIGHT,
+        90: jsnes.Controller.BUTTON_B,
+        88: jsnes.Controller.BUTTON_A,
+        13: jsnes.Controller.BUTTON_START,
+        16: jsnes.Controller.BUTTON_SELECT
+      };
+
       nes = new jsnes.NES({
         onFrame: function (buf) {
           var d = img.data;
@@ -86,6 +103,7 @@
       nes.loadROM(romData);
       document.addEventListener('keydown', keyDown);
       document.addEventListener('keyup', keyUp);
+      overlay.focus();
       frame();
     }
 
@@ -96,25 +114,14 @@
       animId = requestAnimationFrame(frame);
     }
 
-    var map = {
-      38: jsnes.Controller.BUTTON_UP,
-      40: jsnes.Controller.BUTTON_DOWN,
-      37: jsnes.Controller.BUTTON_LEFT,
-      39: jsnes.Controller.BUTTON_RIGHT,
-      90: jsnes.Controller.BUTTON_B,
-      88: jsnes.Controller.BUTTON_A,
-      13: jsnes.Controller.BUTTON_START,
-      16: jsnes.Controller.BUTTON_SELECT
-    };
-
     function keyDown(e) {
-      if (map[e.keyCode] !== undefined) {
+      if (map && map[e.keyCode] !== undefined) {
         nes.buttonDown(1, map[e.keyCode]);
         e.preventDefault();
       }
     }
     function keyUp(e) {
-      if (map[e.keyCode] !== undefined) {
+      if (map && map[e.keyCode] !== undefined) {
         nes.buttonUp(1, map[e.keyCode]);
         e.preventDefault();
       }
@@ -127,6 +134,7 @@
     function teardown() {
       if (animId) cancelAnimationFrame(animId);
       nes = null;
+      map = null;
       document.removeEventListener('keydown', keyDown);
       document.removeEventListener('keyup', keyUp);
       document.removeEventListener('keydown', escHandler);
