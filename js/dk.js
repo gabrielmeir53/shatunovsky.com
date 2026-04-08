@@ -1,23 +1,26 @@
 'use strict';
 (function () {
-  var seq = [38,38,40,40,37,39,37,39,66,65];
+  var konamiSeq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
   var pos = 0;
+  var active = false;
 
   document.addEventListener('keydown', function (e) {
-    if (pos < seq.length && e.keyCode === seq[pos]) {
+    if (active) return;
+    if (e.key === konamiSeq[pos]) {
       pos++;
-      if (pos === seq.length) { pos = 0; launch(); }
+      if (pos === konamiSeq.length) { pos = 0; launch(); }
     } else {
-      pos = e.keyCode === seq[0] ? 1 : 0;
+      pos = e.key === konamiSeq[0] ? 1 : 0;
     }
   });
 
   function launch() {
     if (document.getElementById('dk-overlay')) return;
+    active = true;
 
     var overlay = document.createElement('div');
     overlay.id = 'dk-overlay';
-    overlay.tabIndex = -1;
+    overlay.tabIndex = 0;
     overlay.style.cssText =
       'position:fixed;inset:0;z-index:9999;background:#000;display:flex;' +
       'align-items:center;justify-content:center;flex-direction:column;outline:none;';
@@ -27,9 +30,7 @@
     close.style.cssText =
       'position:absolute;top:12px;right:18px;font-size:28px;color:#fff;' +
       'background:none;border:none;cursor:pointer;z-index:10000;';
-    close.addEventListener('click', function () {
-      teardown();
-    });
+    close.addEventListener('click', teardown);
     close.addEventListener('mousedown', function (e) { e.preventDefault(); });
 
     var info = document.createElement('div');
@@ -46,7 +47,11 @@
     overlay.appendChild(info);
     document.body.appendChild(overlay);
     overlay.focus();
-    document.addEventListener('keydown', escHandler);
+
+    // Re-focus overlay on any click inside it
+    overlay.addEventListener('mousedown', function (e) {
+      if (e.target !== close) { e.preventDefault(); overlay.focus(); }
+    });
 
     var ctx = canvas.getContext('2d');
     var img = ctx.createImageData(256, 240);
@@ -58,7 +63,6 @@
     document.head.appendChild(script);
 
     var nes;
-    var map;
 
     function loadRom() {
       var xhr = new XMLHttpRequest();
@@ -76,17 +80,6 @@
     }
 
     function startEmulator(romData) {
-      map = {
-        38: jsnes.Controller.BUTTON_UP,
-        40: jsnes.Controller.BUTTON_DOWN,
-        37: jsnes.Controller.BUTTON_LEFT,
-        39: jsnes.Controller.BUTTON_RIGHT,
-        90: jsnes.Controller.BUTTON_B,
-        88: jsnes.Controller.BUTTON_A,
-        13: jsnes.Controller.BUTTON_START,
-        16: jsnes.Controller.BUTTON_SELECT
-      };
-
       nes = new jsnes.NES({
         onFrame: function (buf) {
           var d = img.data;
@@ -101,10 +94,42 @@
         onAudioSample: function () {}
       });
       nes.loadROM(romData);
-      document.addEventListener('keydown', keyDown);
-      document.addEventListener('keyup', keyUp);
+      overlay.addEventListener('keydown', gameKeyDown);
+      overlay.addEventListener('keyup', gameKeyUp);
       overlay.focus();
       frame();
+    }
+
+    var keyMap = {
+      'ArrowUp':    4,  // BUTTON_UP
+      'ArrowDown':  5,  // BUTTON_DOWN
+      'ArrowLeft':  6,  // BUTTON_LEFT
+      'ArrowRight': 7,  // BUTTON_RIGHT
+      'z':          1,  // BUTTON_B
+      'x':          0,  // BUTTON_A
+      'Enter':      3,  // BUTTON_START
+      'Shift':      2   // BUTTON_SELECT
+    };
+
+    function gameKeyDown(e) {
+      if (!nes) return;
+      var btn = keyMap[e.key];
+      if (btn !== undefined) {
+        nes.buttonDown(1, btn);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (e.key === 'Escape') teardown();
+    }
+
+    function gameKeyUp(e) {
+      if (!nes) return;
+      var btn = keyMap[e.key];
+      if (btn !== undefined) {
+        nes.buttonUp(1, btn);
+        e.preventDefault();
+        e.stopPropagation();
+      }
     }
 
     var animId;
@@ -114,30 +139,12 @@
       animId = requestAnimationFrame(frame);
     }
 
-    function keyDown(e) {
-      if (map && map[e.keyCode] !== undefined) {
-        nes.buttonDown(1, map[e.keyCode]);
-        e.preventDefault();
-      }
-    }
-    function keyUp(e) {
-      if (map && map[e.keyCode] !== undefined) {
-        nes.buttonUp(1, map[e.keyCode]);
-        e.preventDefault();
-      }
-    }
-
-    function escHandler(e) {
-      if (e.keyCode === 27) teardown();
-    }
-
     function teardown() {
+      active = false;
       if (animId) cancelAnimationFrame(animId);
       nes = null;
-      map = null;
-      document.removeEventListener('keydown', keyDown);
-      document.removeEventListener('keyup', keyUp);
-      document.removeEventListener('keydown', escHandler);
+      overlay.removeEventListener('keydown', gameKeyDown);
+      overlay.removeEventListener('keyup', gameKeyUp);
       var el = document.getElementById('dk-overlay');
       if (el) el.remove();
     }
