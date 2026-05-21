@@ -198,13 +198,31 @@
         showError('This game could not be loaded.');
         return;
       }
-      frame();
+      lastTime = 0;
+      frameAcc = 0;
+      animId = requestAnimationFrame(frame);
     }
 
-    function frame() {
+    // The NES renders at a fixed ~60.1 fps. requestAnimationFrame fires at the
+    // display's refresh rate (60, 120, 144 Hz...), so stepping the emulator once
+    // per callback would tie game speed to the monitor. Instead we accumulate
+    // real elapsed time and run a fixed number of emulator frames — identical
+    // speed on every machine.
+    var FRAME_MS = 1000 / 60.0988;
+    var lastTime = 0, frameAcc = 0;
+
+    function frame(now) {
       if (!nes) return;
-      nes.frame();
       animId = requestAnimationFrame(frame);
+      if (!lastTime) { lastTime = now; return; }
+      var delta = now - lastTime;
+      lastTime = now;
+      if (delta > 250) delta = 250;   // cap catch-up after a stall or backgrounded tab
+      frameAcc += delta;
+      while (frameAcc >= FRAME_MS) {
+        nes.frame();
+        frameAcc -= FRAME_MS;
+      }
     }
 
     function stopGame() {
