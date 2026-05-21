@@ -92,8 +92,39 @@
     info.style.cssText = 'color:#555;font-size:12px;margin-top:8px;font-family:monospace;';
     info.textContent = 'arrows = d-pad • z = B • x = A • enter = start • shift = select • esc = menu';
 
+    // ----- audio controls (muted by default, adjustable) -----
+    var audioRow = document.createElement('div');
+    audioRow.style.cssText =
+      'display:flex;align-items:center;gap:8px;margin-top:10px;' +
+      'font-family:monospace;font-size:12px;color:#888;';
+
+    var muteBtn = document.createElement('button');
+    muteBtn.className = 'game-mute';
+    muteBtn.setAttribute('aria-label', 'Mute or unmute');
+    muteBtn.textContent = '🔇';
+    muteBtn.style.cssText =
+      'background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:0;';
+    muteBtn.addEventListener('click', toggleMute);
+    muteBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+
+    var slider = document.createElement('input');
+    slider.className = 'game-slider';
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = '0';
+    slider.setAttribute('aria-label', 'Volume');
+    slider.style.cssText = 'width:120px;cursor:pointer;accent-color:#782F40;';
+    slider.addEventListener('input', function () { setVolume(+slider.value / 100); });
+    slider.addEventListener('change', function () { overlay.focus(); });
+    slider.addEventListener('mouseup', function () { overlay.focus(); });
+
+    audioRow.appendChild(muteBtn);
+    audioRow.appendChild(slider);
+
     game.appendChild(canvas);
     game.appendChild(info);
+    game.appendChild(audioRow);
 
     overlay.appendChild(close);
     overlay.appendChild(menu);
@@ -102,11 +133,15 @@
     overlay.focus();
 
     // Keep keyboard focus on the overlay for any click that is not a control.
+    // The volume slider is excluded so it can still be dragged.
     overlay.addEventListener('mousedown', function (e) {
-      if (e.target !== close && !e.target.classList.contains('game-menu-item')) {
-        e.preventDefault();
-        overlay.focus();
+      var t = e.target;
+      if (t === close || t.classList.contains('game-menu-item') ||
+          t.classList.contains('game-slider')) {
+        return;
       }
+      e.preventDefault();
+      overlay.focus();
     });
 
     var ctx = canvas.getContext('2d');
@@ -123,6 +158,79 @@
     setSel(0);
 
     var nes = null, animId = null;
+
+    // ----- audio: Web Audio output via a ring buffer -----
+    // jsnes emits samples synchronously while emulating; a ScriptProcessor
+    // drains them at the hardware rate so playback stays smooth. Muted by
+    // default — the slider sets the gain.
+    var SAMPLE_COUNT = 8192;
+    var SAMPLE_MASK = SAMPLE_COUNT - 1;
+    var audioL = new Float32Array(SAMPLE_COUNT);
+    var audioR = new Float32Array(SAMPLE_COUNT);
+    var audioWrite = 0, audioRead = 0;
+    var audioCtx = null, gainNode = null, scriptNode = null;
+    var muted = true;   // muted by default
+    var volume = 0;     // 0..1, follows the slider
+
+    function applyGain() {
+      if (gainNode) gainNode.gain.value = muted ? 0 : volume;
+    }
+
+    function setVolume(v) {
+      volume = v;
+      muted = v === 0;
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      applyGain();
+    }
+
+    function toggleMute() {
+      if (muted || volume === 0) {
+        if (volume === 0) { volume = 0.5; slider.value = '50'; }  // restore a level
+        muted = false;
+      } else {
+        muted = true;
+      }
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      applyGain();
+    }
+
+    function writeAudioSample(left, right) {
+      audioL[audioWrite] = left;
+      audioR[audioWrite] = right;
+      audioWrite = (audioWrite + 1) & SAMPLE_MASK;
+      if (audioWrite === audioRead) {            // ring full: drop the oldest sample
+        audioRead = (audioRead + 1) & SAMPLE_MASK;
+      }
+    }
+
+    function onAudioProcess(e) {
+      var outL = e.outputBuffer.getChannelData(0);
+      var outR = e.outputBuffer.getChannelData(1);
+      var len = outL.length;
+      var avail = (audioWrite - audioRead) & SAMPLE_MASK;
+      var n = avail < len ? avail : len;
+      var i = 0;
+      for (; i < n; i++) {
+        var idx = (audioRead + i) & SAMPLE_MASK;
+        outL[i] = audioL[idx];
+        outR[i] = audioR[idx];
+      }
+      for (; i < len; i++) { outL[i] = 0; outR[i] = 0; }   // underrun: pad with silence
+      audioRead = (audioRead + n) & SAMPLE_MASK;
+    }
+
+    function ensureAudio() {
+      if (audioCtx) return;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;   // no Web Audio: the game still runs, just silent
+      audioCtx = new AC();
+      gainNode = audioCtx.createGain();
+      scriptNode = audioCtx.createScriptProcessor(1024, 0, 2);
+      scriptNode.onaudioprocess = onAudioProcess;
+      scriptNode.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      applyGain();
+    }
 
     function showMenu() {
       stopGame();
@@ -178,7 +286,11 @@
     }
 
     function startEmulator(romData) {
+      ensureAudio();
+      audioWrite = 0;
+      audioRead = 0;
       nes = new jsnes.NES({
+        sampleRate: audioCtx ? audioCtx.sampleRate : 44100,
         onFrame: function (buf) {
           var d = img.data;
           for (var i = 0; i < buf.length; i++) {
@@ -189,7 +301,7 @@
           }
           ctx.putImageData(img, 0, 0);
         },
-        onAudioSample: function () {}
+        onAudioSample: writeAudioSample
       });
       try {
         nes.loadROM(romData);
@@ -197,6 +309,9 @@
         nes = null;
         showError('This game could not be loaded.');
         return;
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
       }
       lastTime = 0;
       frameAcc = 0;
@@ -278,6 +393,11 @@
     function teardown() {
       active = false;
       stopGame();
+      if (scriptNode) { scriptNode.disconnect(); scriptNode.onaudioprocess = null; }
+      if (gainNode) gainNode.disconnect();
+      if (audioCtx) { audioCtx.close(); audioCtx = null; }
+      gainNode = null;
+      scriptNode = null;
       overlay.removeEventListener('keydown', gameKeyDown);
       overlay.removeEventListener('keyup', gameKeyUp);
       var el = document.getElementById('game-overlay');
