@@ -292,11 +292,12 @@
       nes = new jsnes.NES({
         sampleRate: audioCtx ? audioCtx.sampleRate : 44100,
         onFrame: function (buf) {
+          // jsnes packs each pixel as 0xBBGGRR, so red is the low byte.
           var d = img.data;
           for (var i = 0; i < buf.length; i++) {
-            d[i * 4]     = (buf[i] >> 16) & 0xff;
-            d[i * 4 + 1] = (buf[i] >> 8)  & 0xff;
-            d[i * 4 + 2] =  buf[i]        & 0xff;
+            d[i * 4]     =  buf[i]        & 0xff;   // R
+            d[i * 4 + 1] = (buf[i] >> 8)  & 0xff;   // G
+            d[i * 4 + 2] = (buf[i] >> 16) & 0xff;   // B
             d[i * 4 + 3] = 0xff;
           }
           ctx.putImageData(img, 0, 0);
