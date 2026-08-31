@@ -36,4 +36,5 @@ jobs:
             --exclude '.git' \
             --exclude '.github' \
             --exclude '.htmlhintrc' \
+            --exclude 'calendars' \
             ./ root@104.131.45.126:/var/www/shatunovsky.com/
