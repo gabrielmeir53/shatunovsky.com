@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSDL Softball Calendar</title>
+  <meta name="description" content="Subscribe to the Penn State Dickinson Law softball calendar: fall practices, the all-grade scrimmage, and the 2027 UVA Law Softball Invitational. Updates automatically on your phone.">
+  <meta name="robots" content="noindex">
+  <meta property="og:title" content="PSDL Softball Calendar">
+  <meta property="og:description" content="Practices, scrimmage, and the UVA Law Softball Invitational. Tap once to subscribe.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://shatunovsky.com/softball/">
+  <link rel="canonical" href="https://shatunovsky.com/softball/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css?v=5">
+  <style>
+    .sb-hero { text-align: center; padding: 2.5rem 0 1.5rem; }
+    .sb-hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: .4rem; }
+    .sb-hero .subtitle { color: var(--text-dim); font-style: italic; }
+    .sb-buttons { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 1.5rem 0 1rem; }
+    .sb-btn {
+      display: block; text-align: center; padding: 1rem 1.2rem;
+      background: var(--accent); color: #fff; border-radius: 8px;
+      font-family: var(--font-sans); font-weight: 600; font-size: 1.05rem;
+      border: 1px solid var(--accent);
+    }
+    .sb-btn:hover { background: var(--accent-hover); color: #fff; }
+    .sb-btn small { display: block; font-weight: 400; font-size: .85rem; opacity: .85; }
+    .sb-url {
+      display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: .7rem 1rem; font-family: var(--font-sans); font-size: .95rem;
+    }
+    .sb-url code { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .sb-url button {
+      font-family: var(--font-sans); font-size: .9rem; padding: .4rem .8rem;
+      border: 1px solid var(--accent); background: transparent; color: var(--accent);
+      border-radius: 6px; cursor: pointer;
+    }
+    .sb-url button:hover { background: var(--accent); color: #fff; }
+    .sb-note { color: var(--text-muted); font-size: .92rem; margin-top: .6rem; }
+    .sb-section { padding: 1.5rem 0 0; }
+    .sb-section h2 { font-size: 1.35rem; margin-bottom: .8rem; }
+    .sb-list { list-style: none; }
+    .sb-list li {
+      display: grid; grid-template-columns: 7.5rem 1fr; gap: .8rem;
+      padding: .6rem 0; border-bottom: 1px solid var(--rule);
+    }
+    .sb-list .when { font-family: var(--font-sans); color: var(--text-dim); font-size: .95rem; }
+    .sb-list .what { font-weight: 700; }
+    .sb-list .where { color: var(--text-muted); font-size: .92rem; }
+    .sb-list .tent { font-family: var(--font-sans); font-size: .75rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 .35rem; margin-left: .4rem; vertical-align: middle; }
+    .sb-qr { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+    .sb-qr img { width: 180px; height: 180px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+    @media (max-width: 520px) { .sb-list li { grid-template-columns: 1fr; gap: .1rem; } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-brand">Gabriel M. Shatunovsky</a>
+    <button class="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links">
+      <li><a href="../index.html">About</a></li>
+      <li><a href="../resume.html">Resume</a></li>
+      <li><a href="../writing.html">Writing</a></li>
+      <li><a href="https://gabrielmeir53.substack.com" target="_blank" rel="noopener">Blog</a></li>
+      <li><a href="../beyond.html">Beyond the Law</a></li>
+      <li><a href="../contact.html">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="container">
+
+    <section class="sb-hero">
+      <h1>PSDL Softball Calendar</h1>
+      <p class="subtitle">Fall practices, the all-grade scrimmage, and the 2026&ndash;27 UVA Law Softball Invitational</p>
+    </section>
+
+    <section>
+      <p>Subscribe once and every practice, location change, and tournament update shows up on your phone automatically. Practices are marked <em>tentative</em> until the location and time are confirmed &mdash; weather calls still go out in the GroupMe.</p>
+
+      <div class="sb-buttons">
+        <a class="sb-btn" href="webcal://shatunovsky.com/calendars/softball.ics">iPhone / Apple Calendar<small>opens the Calendar app</small></a>
+        <a class="sb-btn" href="https://calendar.google.com/calendar/r?cid=webcal%3A%2F%2Fshatunovsky.com%2Fcalendars%2Fsoftball.ics" target="_blank" rel="noopener">Google Calendar<small>Android &amp; Gmail users</small></a>
+        <a class="sb-btn" href="https://outlook.live.com/calendar/0/addfromweb?url=https%3A%2F%2Fshatunovsky.com%2Fcalendars%2Fsoftball.ics&amp;name=PSDL%20Softball" target="_blank" rel="noopener">Outlook<small>outlook.com / Microsoft 365</small></a>
+      </div>
+
+      <div class="sb-url">
+        <code id="feed-url">https://shatunovsky.com/calendars/softball.ics</code>
+        <button type="button" id="copy-btn">Copy link</button>
+      </div>
+      <p class="sb-note">Any calendar app can subscribe to that address (&ldquo;Add calendar &rarr; From URL&rdquo;). Google Calendar on Android: add it on the web first, then it syncs to the app.</p>
+    </section>
+
+    <section class="sb-section">
+      <h2>Upcoming</h2>
+      <ul class="sb-list" id="events">
+        <li><span class="when">Loading&hellip;</span><span class="what">If this does not load, the calendar link above still works.</span></li>
+      </ul>
+    </section>
+
+    <section class="sb-section">
+      <h2>Share</h2>
+      <div class="sb-qr">
+        <img src="qr.png" alt="QR code linking to this page" width="180" height="180">
+        <p>Scan or screenshot this code to send someone here. Questions about the schedule go to the SBA IM Committee in the GroupMe.</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    &copy; 2026 Gabriel M. Shatunovsky &middot;
+    <a href="mailto:gabriel@shatunovsky.com">gabriel@shatunovsky.com</a> &middot;
+    <a href="https://www.linkedin.com/in/gabrielmeir53" target="_blank" rel="noopener">LinkedIn</a>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+(function () {
+  'use strict';
+  var copyBtn = document.getElementById('copy-btn');
+  copyBtn.addEventListener('click', function () {
+    var url = document.getElementById('feed-url').textContent;
+    var done = function () { copyBtn.textContent = 'Copied'; setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 1500); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(done); }
+    else { window.prompt('Copy this link:', url); }
+  });
+
+  function unfold(text) { return text.replace(/\r?\n[ \t]/g, ''); }
+  function unesc(s) { return s.replace(/\\n/g, ' ').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\'); }
+  function parse(ics) {
+    var events = [], cur = null;
+    unfold(ics).split(/\r?\n/).forEach(function (line) {
+      if (line === 'BEGIN:VEVENT') { cur = {}; return; }
+      if (line === 'END:VEVENT') { if (cur) events.push(cur); cur = null; return; }
+      if (!cur) return;
+      var i = line.indexOf(':'); if (i < 0) return;
+      var key = line.slice(0, i).split(';')[0], val = line.slice(i + 1);
+      if (key === 'DTSTART' || key === 'DTEND') {
+        var m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/.exec(val);
+        cur[key] = { d: new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0), allDay: !m[4] };
+      } else if (key === 'SUMMARY' || key === 'LOCATION' || key === 'STATUS') { cur[key] = unesc(val); }
+    });
+    return events;
+  }
+  var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtTime(d) { var h = d.getHours(), m = d.getMinutes(); return (h % 12 || 12) + (m ? ':' + (m < 10 ? '0' : '') + m : '') + (h < 12 ? ' AM' : ' PM'); }
+  function fmt(ev) {
+    var s = ev.DTSTART.d, e = ev.DTEND.d, out = days[s.getDay()] + ' ' + months[s.getMonth()] + ' ' + s.getDate();
+    if (ev.DTSTART.allDay) {
+      var last = new Date(e.getTime() - 86400000);
+      if (last > s) out += '–' + last.getDate();
+      return out;
+    }
+    return out + '<br>' + fmtTime(s) + '–' + fmtTime(e);
+  }
+  function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; }
+  fetch('../calendars/softball.ics', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }).then(function (ics) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var list = parse(ics).filter(function (ev) { return ev.DTSTART && ev.DTEND && ev.DTEND.d > today; })
+      .sort(function (a, b) { return a.DTSTART.d - b.DTSTART.d; });
+    var ul = document.getElementById('events'); ul.innerHTML = '';
+    if (!list.length) { ul.appendChild(el('li', null, '<span class="when"></span><span class="what">Nothing scheduled yet.</span>')); return; }
+    list.forEach(function (ev) {
+      var li = el('li'); li.appendChild(el('span', 'when', fmt(ev)));
+      var body = el('span'); var what = el('span', 'what'); what.textContent = ev.SUMMARY || '';
+      if (ev.STATUS === 'TENTATIVE') { what.appendChild(el('span', 'tent', 'tentative')); }
+      body.appendChild(what);
+      if (ev.LOCATION) { var w = el('div', 'where'); w.textContent = ev.LOCATION.replace(/, United States$/, ''); body.appendChild(w); }
+      li.appendChild(body); ul.appendChild(li);
+    });
+  }).catch(function () { /* fallback text already in place */ });
+})();
+</script>
+</body>
+</html>
