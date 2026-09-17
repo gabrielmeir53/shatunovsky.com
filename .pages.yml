@@ -46,7 +46,7 @@ content:
             label: Description
             type: rich-text
             options:
-              format: html
+              format: markdown
           - name: note
             label: Small italic note
             type: string

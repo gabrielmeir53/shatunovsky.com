@@ -1,9 +1,14 @@
 // Eleventy builds only the pages that have been moved into _src/ (content lives in content/*.json,
 // edited through Pages CMS — see .pages.yml). Everything else is copied through untouched, so the
 // output in _site/ is the same plain static site that used to be deployed straight from the repo root.
+import markdownIt from "markdown-it";
+
+// Rich-text fields are stored as Markdown by the editor (never typed by hand). Raw HTML is not allowed.
+const md = markdownIt({ html: false, linkify: false, typographer: false });
+
 export default function (eleventyConfig) {
   for (const path of [
-    "*.html", "css", "js", "fonts", "assets", "softball",
+    "*.html", "css", "js", "fonts", "assets", "softball", "admin",
     "favicon.ico", "favicon.svg", "apple-touch-icon.png", "robots.txt", "sitemap.xml", ".nojekyll",
   ]) {
     eleventyConfig.addPassthroughCopy(path);
@@ -16,14 +21,14 @@ export default function (eleventyConfig) {
     return escaped.replace(/\*([^*]+)\*/g, "<em>$1</em>");
   });
 
-  // Rich-text fields arrive as HTML. One paragraph becomes <p class="…">; several become a
-  // <div class="…"> holding the paragraphs, so the markup stays valid either way.
-  eleventyConfig.addFilter("richBlock", (html, className) => {
-    const s = String(html ?? "").trim();
-    if (!s) return "";
-    const single = s.match(/^<p>([\s\S]*)<\/p>$/);
-    if (single && !/<\/p>\s*<p[ >]/.test(single[1])) return `<p class="${className}">${single[1]}</p>`;
-    return /^<(p|ul|ol|div|blockquote)[ >]/.test(s) ? `<div class="${className}">${s}</div>` : `<p class="${className}">${s}</p>`;
+  // Render a rich-text (Markdown) field. One paragraph becomes <p class="…">; anything longer
+  // becomes a <div class="…"> holding the blocks, so the markup stays valid either way.
+  eleventyConfig.addFilter("richBlock", (value, className) => {
+    const html = md.render(String(value ?? "")).trim();
+    if (!html) return "";
+    const single = html.match(/^<p>([\s\S]*)<\/p>$/);
+    if (single && !single[1].includes("</p>")) return `<p class="${className}">${single[1]}</p>`;
+    return `<div class="${className}">${html}</div>`;
   });
 
   return {
