@@ -1,0 +1,15 @@
+{
+  "name": "shatunovsky.com",
+  "private": true,
+  "type": "module",
+  "description": "Personal site. Plain HTML, with Eleventy building the pages whose content is edited in Pages CMS.",
+  "scripts": {
+    "build": "eleventy",
+    "serve": "eleventy --serve",
+    "lint": "htmlhint \"_site/**/*.html\" --config .htmlhintrc"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "htmlhint": "^1.1.4"
+  }
+}

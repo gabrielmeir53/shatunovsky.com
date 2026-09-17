@@ -1,0 +1,66 @@
+# Pages CMS configuration (https://app.pagescms.org) — the visual editor for this site.
+# Each entry under `content` is a screen in the editor; saving commits to this repo and
+# the GitHub Action rebuilds + deploys. Templates that render these files live in _src/.
+
+media:
+  - name: papers
+    label: Papers (PDF)
+    input: assets/papers
+    output: assets/papers
+    extensions: [pdf]
+  - name: images
+    label: Images
+    input: assets/img
+    output: assets/img
+    categories: [image]
+
+content:
+  - name: writing
+    label: Writing Samples
+    type: file
+    path: content/writing.json
+    fields:
+      - name: heading
+        label: Page heading
+        type: string
+        required: true
+      - name: meta_description
+        label: Search / link-preview description
+        description: One or two sentences. Shown by Google and when the page is shared.
+        type: text
+      - name: papers
+        label: Papers
+        type: object
+        list: true
+        fields:
+          - name: title
+            label: Title
+            description: "Wrap a case name in *asterisks* to italicize it, e.g. The *Loper* Rorschach Test"
+            type: string
+            required: true
+          - name: course
+            label: Course line
+            description: "e.g. Sports Law (Prof. Steve Ross) · Penn State Dickinson Law · Fall 2025"
+            type: string
+          - name: description
+            label: Description
+            type: rich-text
+            options:
+              format: html
+          - name: note
+            label: Small italic note
+            type: string
+          - name: excerpt_pdf
+            label: Excerpt PDF
+            description: Creates the "View Excerpt" and "Download Excerpt" buttons. Leave empty to hide them.
+            type: file
+            options:
+              media: papers
+              extensions: [pdf]
+          - name: full_pdf
+            label: Full paper PDF
+            description: Creates the "Read Full Paper" button. Leave empty to hide it.
+            type: file
+            options:
+              media: papers
+              extensions: [pdf]
