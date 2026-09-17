@@ -1,0 +1,77 @@
+# Sveltia CMS (Decap-compatible) configuration — the visual editor at https://shatunovsky.com/admin/
+# Saving in the editor commits to `main`; the GitHub Action then rebuilds and deploys (~1 minute).
+# Templates that render these files live in _src/. See README.md.
+
+backend:
+  name: github
+  repo: gabrielmeir53/shatunovsky.com
+  branch: main
+  commit_messages:
+    create: "Editor: create {{collection}} “{{slug}}”"
+    update: "Editor: update {{collection}} “{{slug}}”"
+    delete: "Editor: delete {{collection}} “{{slug}}”"
+    uploadMedia: "Editor: upload {{path}}"
+    deleteMedia: "Editor: delete {{path}}"
+
+site_url: https://shatunovsky.com
+display_url: https://shatunovsky.com
+logo_url: /favicon.svg
+
+media_folder: /assets/img
+public_folder: assets/img
+
+collections:
+  - name: pages
+    label: Pages
+    description: The text of each page. Layout and styling are handled by the templates.
+    editor:
+      preview: false
+    files:
+      - name: writing
+        label: Writing Samples
+        file: content/writing.json
+        format: json
+        fields:
+          - { name: heading, label: Page heading, widget: string }
+          - name: meta_description
+            label: Search / link-preview description
+            hint: One or two sentences. Shown by Google and when the page is shared.
+            widget: text
+          - name: papers
+            label: Papers
+            label_singular: Paper
+            widget: list
+            summary: "{{fields.title}}"
+            collapsed: true
+            fields:
+              - name: title
+                label: Title
+                hint: "Wrap a case name in *asterisks* to italicize it, e.g. The *Loper* Rorschach Test"
+                widget: string
+              - name: course
+                label: Course line
+                hint: "e.g. Sports Law (Prof. Steve Ross) · Penn State Dickinson Law · Fall 2025"
+                widget: string
+                required: false
+              - name: description
+                label: Description
+                widget: markdown
+                modes: [rich_text]
+                buttons: [bold, italic, link, bulleted-list, numbered-list]
+                editor_components: []
+                required: false
+              - { name: note, label: Small italic note, widget: string, required: false }
+              - name: excerpt_pdf
+                label: Excerpt PDF
+                hint: Creates the “View Excerpt” and “Download Excerpt” buttons. Leave empty to hide them.
+                widget: file
+                media_folder: /assets/papers
+                public_folder: assets/papers
+                required: false
+              - name: full_pdf
+                label: Full paper PDF
+                hint: Creates the “Read Full Paper” button. Leave empty to hide it.
+                widget: file
+                media_folder: /assets/papers
+                public_folder: assets/papers
+                required: false
