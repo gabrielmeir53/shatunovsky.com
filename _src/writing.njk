@@ -1,0 +1,36 @@
+---
+layout: base.njk
+permalink: writing.html
+fileName: writing.html
+nav: writing
+eleventyComputed:
+  pageTitle: "{{ writing.heading }}"
+  metaDescription: "{{ writing.meta_description }}"
+---
+
+    <h1 style="font-size:1.8rem; margin-bottom:2rem;">{{ writing.heading }}</h1>
+{% for paper in writing.papers %}
+    <div class="writing-card">
+      <h2>{{ paper.title | inlineItalics | safe }}</h2>
+      {%- if paper.course %}
+      <div class="course">{{ paper.course }}</div>
+      {%- endif %}
+      {{ paper.description | richBlock("desc") | safe }}
+      {%- if paper.note %}
+      <p class="note">{{ paper.note }}</p>
+      {%- endif %}
+      {%- if paper.excerpt_pdf or paper.full_pdf %}
+      <div class="btn-row">
+        {%- if paper.excerpt_pdf %}
+        <a href="{{ paper.excerpt_pdf }}" target="_blank" rel="noopener" class="btn btn-primary">View Excerpt</a>
+        {%- endif %}
+        {%- if paper.full_pdf %}
+        <a href="{{ paper.full_pdf }}" target="_blank" rel="noopener" class="btn {{ 'btn-outline' if paper.excerpt_pdf else 'btn-primary' }}">Read Full Paper</a>
+        {%- endif %}
+        {%- if paper.excerpt_pdf %}
+        <a href="{{ paper.excerpt_pdf }}" download class="btn btn-outline">Download Excerpt</a>
+        {%- endif %}
+      </div>
+      {%- endif %}
+    </div>
+{% endfor %}

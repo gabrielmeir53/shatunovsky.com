@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gabriel M. Shatunovsky | {{ pageTitle }}</title>
+  <meta name="description" content="{{ metaDescription }}">
+  <meta name="author" content="Gabriel M. Shatunovsky">
+  <meta property="og:title" content="Gabriel M. Shatunovsky | {{ pageTitle }}">
+  <meta property="og:description" content="{{ metaDescription }}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.shatunovsky.com/{{ fileName }}">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://www.shatunovsky.com/{{ fileName }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css?v=5">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">Gabriel M. Shatunovsky</a>
+    <button class="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links">
+      <li><a href="index.html"{% if nav == "about" %} class="active"{% endif %}>About</a></li>
+      <li><a href="resume.html"{% if nav == "resume" %} class="active"{% endif %}>Resume</a></li>
+      <li><a href="writing.html"{% if nav == "writing" %} class="active"{% endif %}>Writing</a></li>
+      <li><a href="https://gabrielmeir53.substack.com" target="_blank" rel="noopener">Blog</a></li>
+      <li><a href="beyond.html"{% if nav == "beyond" %} class="active"{% endif %}>Beyond the Law</a></li>
+      <li><a href="contact.html"{% if nav == "contact" %} class="active"{% endif %}>Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="container">
+{{ content | safe }}
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    &copy; 2026 Gabriel M. Shatunovsky &middot;
+    <a href="mailto:gabriel@shatunovsky.com">gabriel@shatunovsky.com</a> &middot;
+    <a href="https://www.linkedin.com/in/gabrielmeir53" target="_blank" rel="noopener">LinkedIn</a>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
