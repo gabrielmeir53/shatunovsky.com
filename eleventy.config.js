@@ -8,7 +8,7 @@ const md = markdownIt({ html: false, linkify: false, typographer: false });
 
 export default function (eleventyConfig) {
   for (const path of [
-    "*.html", "css", "js", "fonts", "assets", "softball", "admin",
+    "*.html", "css", "js", "fonts", "assets", "softball", "chowshake", "admin",
     "favicon.ico", "favicon.svg", "apple-touch-icon.png", "robots.txt", "sitemap.xml", ".nojekyll",
   ]) {
     eleventyConfig.addPassthroughCopy(path);
