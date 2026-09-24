@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join a Chowshake group</title>
+  <meta name="description" content="Join a friend's Chowshake group spin.">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="../../css/style.css?v=5">
+  <style>
+    .cs-join { text-align: center; padding: 2rem 0; }
+    .cs-join h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: .6rem; }
+    .cs-code { font-family: ui-monospace, Menlo, monospace; font-size: 3.2rem; font-weight: 800; letter-spacing: .4em; margin: 1rem 0 1.4rem; }
+    .cs-btn {
+      display: inline-block; padding: 1rem 1.6rem; border-radius: 999px; background: var(--accent); color: #fff;
+      font-family: var(--font-sans); font-weight: 600; font-size: 1.1rem; border: 1px solid var(--accent);
+    }
+    .cs-btn:hover { background: var(--accent-hover); color: #fff; }
+    .cs-note { color: var(--text-dim); margin-top: 1.4rem; }
+  </style>
+</head>
+<body>
+
+<main class="page">
+  <div class="container">
+    <section class="cs-join">
+      <h1>Join the group spin</h1>
+      <p>A friend invited you to pick a restaurant together.</p>
+      <div class="cs-code" id="code">&middot;&middot;&middot;&middot;</div>
+      <a class="cs-btn" id="open" href="chowshake://join/">Open in Chowshake</a>
+      <p class="cs-note">No app yet? Chowshake is in testing. Ask whoever invited you for the TestFlight link, then enter this code under Group spin.</p>
+      <p class="cs-note"><a href="../">About Chowshake</a> &middot; <a href="../privacy/">Privacy</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var code = (new URLSearchParams(location.search).get('code') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (code.length === 4) {
+    document.getElementById('code').textContent = code;
+    document.getElementById('open').href = 'chowshake://join/' + code;
+  }
+})();
+</script>
+</body>
+</html>
