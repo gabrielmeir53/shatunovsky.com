@@ -23,7 +23,7 @@
   <!-- Cloudflare caches .js/.css at the edge for 4 hours. Bump ?v= whenever app.js or audit.css
        changes so visitors get the new file immediately (same pattern as ../css/style.css?v=5). -->
   <link rel="stylesheet" href="audit.css?v=2">
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </head>
 <body>
 
@@ -42,8 +42,12 @@
     </section>
 
     <section class="ga-input" aria-labelledby="input-h">
-      <h2 id="input-h">Load your advising transcript</h2>
-      <p>In LionPATH: <strong>Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript</strong>, then save it as a PDF.</p>
+      <h2 id="input-h">Load your LionPATH PDF</h2>
+      <p>Either document works:</p>
+      <ul>
+        <li><strong>Advising transcript:</strong> Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript, then save it as a PDF.</li>
+        <li><strong>Requirements report:</strong> Student Home Base &rsaquo; Degree Planning and Progress &rsaquo; My Academic Requirements &rsaquo; View Report as PDF.</li>
+      </ul>
       <label class="ga-drop" id="drop">
         <input type="file" id="file" accept="application/pdf,.pdf">
         <span class="ga-drop-main">Choose the PDF or drop it here</span>
@@ -51,10 +55,11 @@
       </label>
       <div class="ga-actions">
         <button type="button" id="try-sample" class="ga-btn ga-btn-secondary">Try a sample transcript</button>
-        <a href="sample-transcript.pdf" download class="ga-link">Download the sample PDF</a>
+        <button type="button" id="try-sample-report" class="ga-btn ga-btn-secondary">Try a sample requirements report</button>
+        <span class="ga-link">Sample PDFs (made-up student): <a href="sample-transcript.pdf" download>transcript</a> &middot; <a href="sample-requirements-report.pdf" download>requirements report</a></span>
       </div>
       <details class="ga-paste">
-        <summary>PDF won&rsquo;t read? Paste the transcript text instead</summary>
+        <summary>PDF won&rsquo;t read? Paste the text instead</summary>
         <label for="paste" class="ga-visually-hidden">Transcript text</label>
         <textarea id="paste" rows="8" placeholder="Open the PDF, select all, copy, and paste here."></textarea>
         <button type="button" id="use-paste" class="ga-btn ga-btn-secondary">Audit pasted text</button>

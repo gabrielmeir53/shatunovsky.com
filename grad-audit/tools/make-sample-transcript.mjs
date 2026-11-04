@@ -1,38 +1,46 @@
 #!/usr/bin/env node
 /**
- * make-sample-transcript.mjs: writes grad-audit/sample-transcript.pdf, a SYNTHETIC advising
- * transcript laid out like LionPATH's, for demos and tests. It contains no real student data.
+ * make-sample-transcript.mjs: writes the two SYNTHETIC sample PDFs used for demos and testing.
+ * They contain no real student data.
+ *   sample-transcript.pdf           laid out like the LionPATH Advising Transcript
+ *   sample-requirements-report.pdf  laid out like LionPATH's My Academic Requirements report
  *
- * The student and courses are defined in ../sample.js (shared with the page and the tests).
+ * The student, courses and layouts are defined in ../sample.js (shared with the page and the tests).
  *
- * The PDF is written by hand (no libraries): one Courier font, one text object per line, positioned
- * in the same column order as the real transcript so the page's parser reads it the same way.
+ * The PDF is written by hand (no libraries): one Courier font, one positioned text object per
+ * fragment, so pdf.js returns the same positions the real documents produce.
  *
  * Usage: node grad-audit/tools/make-sample-transcript.mjs
  */
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { sampleTranscriptLines } from "../sample.js";
+import { sampleTranscriptLines, sampleReportPages } from "../sample.js";
 
 /** Escape text for a PDF string literal. */
 const pdfStr = (s) => `(${s.replace(/[\\()]/g, (m) => "\\" + m)})`;
 
-/** Build a minimal, valid PDF: Letter pages, Courier 8pt, LINES_PER_PAGE lines per page. */
-function buildPdf(lines) {
+/** Lay the transcript's lines out as positioned items: Letter pages, LINES_PER_PAGE lines each. */
+function linesToPages(lines) {
   const LINES_PER_PAGE = 70, TOP = 760, LEADING = 10.5, LEFT = 36;
   const pages = [];
-  for (let i = 0; i < lines.length; i += LINES_PER_PAGE) pages.push(lines.slice(i, i + LINES_PER_PAGE));
+  for (let i = 0; i < lines.length; i += LINES_PER_PAGE) {
+    pages.push({ width: 612, items: lines.slice(i, i + LINES_PER_PAGE).map((str, j) => ({ x: LEFT, y: TOP - j * LEADING, str })) });
+  }
+  return pages;
+}
 
+/** Build a minimal, valid PDF from pages of positioned text items (Courier 8pt, Letter size). */
+function buildPdf(pages) {
   const objects = []; // index 0 → object 1
   const add = (body) => objects.push(body) && objects.length;
   const catalogId = add(null);
   const pagesId = add(null);
   const fontId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
-  const pageIds = pages.map((pageLines) => {
-    // One BT/ET block per line, each absolutely positioned (Td from origin), as many PDF
-    // generators do; the page parser regroups fragments by baseline either way.
-    const ops = pageLines.map((t, j) => `BT /F1 8 Tf 1 0 0 1 ${LEFT} ${(TOP - j * LEADING).toFixed(1)} Tm ${pdfStr(t)} Tj ET`).join("\n");
+  const pageIds = pages.map((page) => {
+    // One BT/ET block per fragment, each absolutely positioned, as report generators do; the
+    // page's parser regroups fragments by baseline either way.
+    const ops = page.items.map((it) => `BT /F1 ${it.size ?? 7} Tf 1 0 0 1 ${it.x} ${it.y.toFixed(1)} Tm ${pdfStr(it.str)} Tj ET`).join("\n");
     const contentId = add(`<< /Length ${Buffer.byteLength(ops, "latin1")} >>\nstream\n${ops}\nendstream`);
     return add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
   });
@@ -53,7 +61,13 @@ function buildPdf(lines) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "sample-transcript.pdf");
-  await writeFile(file, buildPdf(sampleTranscriptLines()));
-  console.log(`wrote ${path.relative(process.cwd(), file)}`);
+  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const outputs = {
+    "sample-transcript.pdf": linesToPages(sampleTranscriptLines()).map((p) => ({ ...p, items: p.items.map((i) => ({ ...i, size: 8 })) })),
+    "sample-requirements-report.pdf": sampleReportPages(),
+  };
+  for (const [name, pages] of Object.entries(outputs)) {
+    await writeFile(path.join(dir, name), buildPdf(pages));
+    console.log(`wrote ${path.relative(process.cwd(), path.join(dir, name))}`);
+  }
 }

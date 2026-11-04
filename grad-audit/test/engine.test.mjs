@@ -18,10 +18,10 @@ import catalog from "../data/catalog.js";
 import lists from "../data/intranet-lists.js";
 import concentrations from "../data/concentrations.js";
 import chart from "../data/course-chart.js";
-import { parseTranscriptText } from "../parser.js";
+import { parseTranscriptText, parsePdfPages, parseAnyText, parseReportLines, itemsToLines, detectFormat } from "../parser.js";
 import { runAudit, assignExclusive, gradeMeets, courseStatus, describeCatalog } from "../engine.js";
 import { normalizeTitle, titleKey, parseQualifiers } from "../match.js";
-import { sampleTranscriptLines } from "../sample.js";
+import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "../sample.js";
 import { parseSubjectPage } from "../tools/build-catalog.mjs";
 
 const DATA = { rules, catalog, lists, concentrations, chart };
@@ -58,7 +58,7 @@ test("parser reads graded, CR, withdrawn and ungraded rows", () => {
 });
 
 test("parser ignores headers and totals, warns on unreadable course-like lines", () => {
-  const p = parseTranscriptText(["Name: X", "Fall 2025", "Term GPA 3.720 Term Totals 14.000 14.000", "LWELA 903 Corporations 3.000 B 9.000"].join("\n"));
+  const p = parseAnyText(["Name: X", "Fall 2025", "Term GPA 3.720 Term Totals 14.000 14.000", "LWELA 903 Corporations 3.000 B 9.000"].join("\n"));
   assert.equal(p.courses.length, 0);
   assert.equal(p.warnings.length, 2); // the malformed row + "no courses found"
 });
@@ -68,6 +68,75 @@ test("parser does not capture name or student ID", () => {
   const json = JSON.stringify(p);
   assert.ok(!json.includes("SAMPLE STUDENT"));
   assert.ok(!json.includes("000000000"));
+});
+
+// ---------------------------------------------------------------- requirements report format
+test("report: format detected and every Course History row read", () => {
+  const pages = sampleReportPages();
+  assert.equal(detectFormat(pages), "requirementsReport");
+  const r = parsePdfPages(pages);
+  assert.equal(r.format, "requirementsReport");
+  assert.deepEqual(r.warnings, []);
+  assert.equal(r.courses.length, SAMPLE_TERMS.flatMap(([, rows]) => rows).length);
+});
+
+test("report: same courses as the advising transcript of the same student", () => {
+  const key = (c) => `${c.term}|${c.code}|${c.attempted}|${c.earned}|${c.grade}|${c.topic}`;
+  const fromReport = parsePdfPages(sampleReportPages()).courses.map(key).sort();
+  const fromTranscript = sample().courses.map(key).sort();
+  assert.deepEqual(fromReport, fromTranscript);
+});
+
+test("report: ignores the requirement tables, header and footer", () => {
+  const r = parsePdfPages(sampleReportPages());
+  // The left-column requirement table repeats LWELA 910 (Fall 2026); it must be counted once.
+  assert.equal(r.courses.filter((c) => c.code === "LWELA 910").length, 1);
+  const json = JSON.stringify(r);
+  for (const s of ["SAMPLE STUDENT", "000000000", "Advisor", "Cum GPA"]) assert.ok(!json.includes(s), s);
+});
+
+test("report: wrapped titles rejoined, topic numbering stripped, glued units split", () => {
+  const lines = [
+    { page: 1, col: 1, x: 426, y: 558, text: "Course History" },
+    { page: 1, col: 1, x: 317, y: 538, text: "PSLFY 908 LEG RES TLS & STRT2.00 FA 2024 B+ EN" },
+    { page: 1, col: 1, x: 317, y: 313, text: "LWSEM 965 Workers' 3.00 FA 2025 A- EN" },
+    { page: 1, col: 1, x: 392, y: 304, text: "Compensation Law" },
+    { page: 1, col: 1, x: 317, y: 128, text: "LWEXP 997 Special Topics 2.00 FA 2026 IP" },
+    { page: 1, col: 1, x: 327, y: 114, text: "Course Topic: 32 - Application and Strategies" },
+    { page: 1, col: 1, x: 306, y: 30, text: "GPA rounds to 2 digits – the final zero is a place holder Page 1 of 2" },
+    { page: 2, col: 0, x: 133, y: 762, text: "SAMPLE: 000000000" },
+    { page: 2, col: 0, x: 29, y: 716, text: "LWEXP 914 Employment Litigation 2.00 SP 2027 IP" },
+  ];
+  const r = parseReportLines(lines);
+  const [lrts, wc, st, el] = r.courses;
+  assert.equal(lrts.description, "LEG RES TLS & STRT");
+  assert.equal(lrts.attempted, 2);
+  assert.equal(wc.description, "Workers' Compensation Law");
+  assert.equal(st.topic, "Application and Strategies");
+  assert.equal(st.grade, null);
+  assert.equal(el.description, "Employment Litigation"); // footer/header never glued on
+  assert.deepEqual(r.terms, ["Fall 2024", "Fall 2025", "Fall 2026", "Spring 2027"]);
+});
+
+test("report: columns are read left then right on each page", () => {
+  const lines = itemsToLines([{ width: 612, items: [
+    { x: 35, y: 500, w: 10, str: "LEFT-A" }, { x: 320, y: 500, w: 10, str: "RIGHT-A" },
+    { x: 35, y: 480, w: 10, str: "LEFT-B" }, { x: 320, y: 480, w: 10, str: "RIGHT-B" },
+  ] }], { splitColumns: true });
+  assert.deepEqual(lines.map((l) => l.text), ["LEFT-A", "LEFT-B", "RIGHT-A", "RIGHT-B"]);
+});
+
+test("report: pasted Course History text is accepted", () => {
+  const p = parseAnyText("Course History\nLWELA 903 Corporations 3.00 FA 2025 B+ EN\nLWELA 910 Energy Lw and Pol 3.00 FA 2026 IP");
+  assert.equal(p.format, "requirementsReport");
+  assert.equal(p.courses.length, 2);
+});
+
+test("report: the sample student's audit matches the transcript-based audit", () => {
+  const a = runAudit(parsePdfPages(sampleReportPages()).courses, DATA, { asOf: AS_OF });
+  const b = auditSample();
+  assert.deepEqual(a.requirements.map((q) => q.status), b.requirements.map((q) => q.status));
+  assert.equal(a.totals.projected, b.totals.projected);
 });
 
 // ---------------------------------------------------------------- matching
