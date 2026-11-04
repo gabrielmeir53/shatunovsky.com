@@ -12,6 +12,13 @@ Personal site. Plain HTML/CSS/JS served by nginx on the droplet, deployed by Git
 
 Converted so far: `writing.html` (`content/writing.json` + `_src/writing.njk`).
 
+## Graduation audit (`grad-audit/`)
+
+A self-contained static tool (plain ES modules, no build step) copied to the output as-is. It checks a
+Penn State Dickinson Law (University Park, pre-Fall 2025) advising transcript against the graduation
+rules in the browser; nothing is uploaded. See `grad-audit/IT-HANDOFF.md`. Tests run in CI:
+`node --test grad-audit/test/engine.test.mjs`.
+
 ## Working on it
 
 ```

@@ -1,0 +1,120 @@
+/*
+ * audit.css: styles for the graduation audit page only. Builds on the site's tokens in
+ * ../css/style.css (colors, fonts). Kept in its own file because the page's Content-Security-Policy
+ * (style-src 'self') does not allow inline <style> blocks.
+ */
+
+.ga .container { max-width: 960px; }
+.ga h2 { font-size: 1.35rem; margin: 0 0 .6rem; }
+.ga h3 { font-size: 1.05rem; margin: 1.2rem 0 .4rem; }
+.ga p { margin: 0 0 .8rem; }
+.ga ul, .ga ol { margin: 0 0 1rem 1.3rem; }
+.ga code, .ga kbd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; background: #efeee9; padding: 0 .25em; border-radius: 3px; }
+
+/* Status palette: also used by the printed summary. Text always accompanies color. */
+.ga {
+  --met: #1d6b3a;      --met-bg: #e7f3eb;
+  --proj: #7a5a00;     --proj-bg: #fbf3d9;
+  --open: #a12a1f;     --open-bg: #fbe9e7;
+  --info: #1b3a5c;     --info-bg: #e8eef5;
+}
+
+.ga-hero { padding: .5rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+.ga-kicker { font-family: var(--font-sans); text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; color: var(--text-muted); margin-bottom: .3rem !important; }
+.ga-hero h1 { font-size: 2.1rem; line-height: 1.2; margin-bottom: .6rem; }
+.ga-sub { color: var(--text-dim); max-width: 46rem; }
+
+.ga-privacy { background: var(--info-bg); border-left: 4px solid var(--info); padding: .9rem 1.1rem; margin-bottom: 1.8rem; border-radius: 0 6px 6px 0; }
+.ga-privacy h2 { font-size: 1.05rem; margin-bottom: .3rem; }
+.ga-privacy p { margin: 0; }
+
+.ga-input, .ga-section { margin-bottom: 2.2rem; }
+
+.ga-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem;
+  border: 2px dashed var(--rule); border-radius: 8px; background: var(--surface); padding: 1.6rem 1rem;
+  cursor: pointer; text-align: center; transition: border-color .15s, background .15s; }
+.ga-drop:hover, .ga-drop.is-over, .ga-drop:focus-within { border-color: var(--accent); background: #f4f6f9; }
+.ga-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.ga-drop-main { font-family: var(--font-sans); font-weight: 600; color: var(--accent); }
+.ga-drop-sub { font-family: var(--font-sans); font-size: .85rem; color: var(--text-muted); }
+
+.ga-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: .9rem 0; }
+.ga-btn { font-family: var(--font-sans); font-size: .92rem; font-weight: 600; padding: .5rem 1rem; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+.ga-btn:hover { background: var(--accent-hover); }
+.ga-btn-secondary { background: var(--surface); color: var(--accent); }
+.ga-btn-secondary:hover { background: #f0f3f7; }
+.ga-link { font-family: var(--font-sans); font-size: .92rem; }
+
+.ga-paste summary { cursor: pointer; font-family: var(--font-sans); font-size: .92rem; color: var(--text-dim); }
+.ga-paste textarea { width: 100%; margin: .6rem 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; padding: .6rem; border: 1px solid var(--border); border-radius: 6px; }
+.ga-check { display: flex; gap: .6rem; align-items: flex-start; margin-top: 1rem; font-size: .95rem; }
+.ga-check input { margin-top: .35rem; }
+.ga-status { font-family: var(--font-sans); font-size: .92rem; color: var(--text-dim); margin-top: .6rem !important; min-height: 1.4em; }
+.ga-status.is-error { color: var(--open); }
+.ga-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Overall banner */
+.ga-banner { border-radius: 8px; padding: 1.1rem 1.3rem; margin-bottom: 1.8rem; border: 1px solid; }
+.ga-banner h2 { font-size: 1.4rem; margin-bottom: .3rem; }
+.ga-banner p:last-child, .ga-banner ul:last-child { margin-bottom: 0; }
+.ga-banner.is-met { background: var(--met-bg); border-color: var(--met); }
+.ga-banner.is-projected { background: var(--proj-bg); border-color: var(--proj); }
+.ga-banner.is-open { background: var(--open-bg); border-color: var(--open); }
+
+/* Status pills */
+.ga-pill { display: inline-block; font-family: var(--font-sans); font-size: .76rem; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; padding: .1rem .5rem; border-radius: 999px; white-space: nowrap; }
+.ga-pill.is-met { background: var(--met-bg); color: var(--met); }
+.ga-pill.is-projected { background: var(--proj-bg); color: var(--proj); }
+.ga-pill.is-open { background: var(--open-bg); color: var(--open); }
+.ga-pill.is-info { background: var(--info-bg); color: var(--info); }
+
+/* Tables */
+.ga-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.ga-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.ga-table th, .ga-table td { text-align: left; vertical-align: top; padding: .55rem .7rem; border-bottom: 1px solid #ecebe6; }
+.ga-table th { font-family: var(--font-sans); font-size: .76rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); background: #f7f7f4; position: sticky; top: 0; }
+.ga-table tr:last-child td { border-bottom: 0; }
+.ga-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ga-table .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; white-space: nowrap; }
+.ga-table .muted, .ga-muted { color: var(--text-muted); }
+.ga-table .small { font-size: .82rem; }
+#catalog-table { font-size: .84rem; }
+.ga-table-wrap.is-tall { max-height: 32rem; overflow-y: auto; }
+
+.ga-filter { width: 100%; padding: .55rem .8rem; border: 1px solid var(--border); border-radius: 6px; font-size: .95rem; margin-bottom: .8rem; font-family: var(--font-sans); }
+
+/* LionPATH error cards */
+.ga-errors { list-style: none; margin: 0 !important; padding: 0; display: grid; gap: .8rem; }
+.ga-errors li { border: 1px solid var(--border); border-left: 4px solid var(--open); border-radius: 0 6px 6px 0; background: var(--surface); padding: .8rem 1rem; }
+.ga-errors h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.ga-errors dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem .8rem; font-size: .9rem; margin: 0; }
+.ga-errors dt { color: var(--text-muted); font-family: var(--font-sans); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; padding-top: .15rem; }
+.ga-errors dd { margin: 0; }
+
+.ga-email { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; padding: .7rem; border: 1px solid var(--border); border-radius: 6px; background: #fbfbf9; }
+
+.ga-note { font-size: .88rem; color: var(--text-dim); background: #f4f3ee; border-radius: 6px; padding: .6rem .8rem; margin: .8rem 0; }
+.ga-warn { color: var(--open); font-size: .9rem; }
+.ga-tag { display: inline-block; font-family: var(--font-sans); font-size: .72rem; border: 1px solid var(--border); border-radius: 4px; padding: 0 .35rem; margin: 0 .25rem .2rem 0; white-space: nowrap; color: var(--text-dim); background: #fafaf7; }
+.ga-tag.is-req { border-color: var(--info); color: var(--info); background: var(--info-bg); }
+.ga-assumptions li { margin-bottom: .45rem; font-size: .93rem; }
+.ga-assumptions .where { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .78rem; color: var(--text-muted); }
+.ga-disclaimer { font-size: .88rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: .8rem; margin-top: 1.2rem !important; }
+
+@media (max-width: 640px) {
+  .ga-hero h1 { font-size: 1.6rem; }
+  .ga-errors dl { grid-template-columns: 1fr; }
+  .ga-table th, .ga-table td { padding: .45rem .5rem; }
+}
+
+/* Printed summary for the registrar: hide inputs and the long reference sections. */
+@media print {
+  .ga-input, .ga-privacy, .ga-section:not(.ga-results-section), .ga-no-print { display: none !important; }
+  .ga .container { max-width: none; padding: 0; }
+  .ga-table-wrap, .ga-table-wrap.is-tall { max-height: none; overflow: visible; border: 0; }
+  .ga-table th { position: static; }
+  .ga-errors li, .ga-table tr { break-inside: avoid; }
+  a[href^="mailto"]::after { content: " (" attr(href) ")"; }
+}

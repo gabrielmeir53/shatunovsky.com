@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    PRIVACY: this Content-Security-Policy is what makes the page's privacy promise checkable.
+      connect-src 'none'  the page cannot send or receive ANY network request after it loads
+                          (no fetch, XHR, WebSocket, beacon), so a transcript cannot leave the browser.
+      form-action 'none'  no form can submit anywhere.
+      default-src 'none'  everything else is denied unless listed; scripts, workers, styles and fonts
+                          load only from this same folder/site ('self'). No third-party code.
+    A meta CSP cannot set frame-ancestors; when hosting at PSU, also send the policy as an HTTP header
+    with frame-ancestors 'none' (see IT-HANDOFF.md).
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Class of 2027 Graduation Audit &mdash; Penn State Dickinson Law (University Park)</title>
+  <meta name="description" content="Unofficial graduation audit for University Park J.D. students admitted before Fall 2025. Runs entirely in your browser.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css?v=5">
+  <link rel="stylesheet" href="audit.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+
+<main class="page ga">
+  <div class="container">
+
+    <header class="ga-hero">
+      <p class="ga-kicker">Penn State Dickinson Law &middot; University Park</p>
+      <h1>Class of 2027 Graduation Audit</h1>
+      <p class="ga-sub">For J.D. students admitted before Fall 2025. Reads your LionPATH advising transcript and checks it against the pre-merger graduation rules, using the post-merger course codes that LionPATH&rsquo;s degree audit doesn&rsquo;t recognize.</p>
+    </header>
+
+    <section class="ga-privacy" aria-labelledby="privacy-h">
+      <h2 id="privacy-h">Your transcript stays on this device</h2>
+      <p>The file is read by this page inside your browser. It is not uploaded, saved, or sent anywhere, and the page is technically blocked from making network connections (<a href="#how-privacy">how to check</a>). Closing the tab erases it.</p>
+    </section>
+
+    <section class="ga-input" aria-labelledby="input-h">
+      <h2 id="input-h">Load your advising transcript</h2>
+      <p>In LionPATH: <strong>Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript</strong>, then save it as a PDF.</p>
+      <label class="ga-drop" id="drop">
+        <input type="file" id="file" accept="application/pdf,.pdf">
+        <span class="ga-drop-main">Choose the PDF or drop it here</span>
+        <span class="ga-drop-sub">PDF only &middot; read locally</span>
+      </label>
+      <div class="ga-actions">
+        <button type="button" id="try-sample" class="ga-btn ga-btn-secondary">Try a sample transcript</button>
+        <a href="sample-transcript.pdf" download class="ga-link">Download the sample PDF</a>
+      </div>
+      <details class="ga-paste">
+        <summary>PDF won&rsquo;t read? Paste the transcript text instead</summary>
+        <label for="paste" class="ga-visually-hidden">Transcript text</label>
+        <textarea id="paste" rows="8" placeholder="Open the PDF, select all, copy, and paste here."></textarea>
+        <button type="button" id="use-paste" class="ga-btn ga-btn-secondary">Audit pasted text</button>
+      </details>
+      <label class="ga-check">
+        <input type="checkbox" id="profdev">
+        I completed the January 1L Professional Development program (it isn&rsquo;t on the transcript).
+      </label>
+      <p id="status" class="ga-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <div id="results" hidden></div>
+
+    <section class="ga-section" aria-labelledby="browser-h">
+      <h2 id="browser-h">Course crosswalk: every PSDL course</h2>
+      <p>All <span id="catalog-count">current</span> Penn State Dickinson Law courses in the Penn State Bulletin, with the graduation requirements and University Park concentrations each one counts toward, and the semesters the course chart lists it. This is the mapping from new course codes to the old requirements.</p>
+      <label for="course-filter" class="ga-visually-hidden">Filter courses</label>
+      <input type="search" id="course-filter" class="ga-filter" placeholder="Filter by code, title, requirement or concentration">
+      <div class="ga-table-wrap"><table class="ga-table" id="catalog-table"></table></div>
+    </section>
+
+    <section class="ga-section ga-how" aria-labelledby="how-h">
+      <h2 id="how-h">How this audit decides</h2>
+      <h3>Sources</h3>
+      <ul id="sources"></ul>
+      <h3>Judgment calls the written rules don&rsquo;t settle</h3>
+      <ol id="assumptions" class="ga-assumptions"></ol>
+      <h3 id="how-privacy">Checking the privacy claim</h3>
+      <p>Open your browser&rsquo;s developer tools (<kbd>F12</kbd> or <kbd>&#8984;&#8997;I</kbd>), choose the <strong>Network</strong> tab, then load a transcript. No requests appear. The page&rsquo;s security policy (<code>connect-src 'none'</code>) makes the browser refuse any connection the page might try.</p>
+      <p class="ga-disclaimer">Unofficial. This page is a student-built aid, not a Penn State system. Graduation certification is made by the law school registrar (<a href="mailto:registrar@pennstatelaw.psu.edu">registrar@pennstatelaw.psu.edu</a>).</p>
+    </section>
+
+  </div>
+</main>
+
+</body>
+</html>
