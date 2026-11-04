@@ -12,7 +12,7 @@ University Park J.D. students admitted **before Fall 2025** (the Class of 2027) 
 
 This folder contains:
 
-- a **static web page** that reads a student's LionPATH advising transcript and produces a corrected audit, the list of LionPATH discrepancies, concentration progress and remaining-semester options;
+- a **static web page** that reads a student's LionPATH advising transcript and produces a corrected audit, a reference list of where LionPATH's audit differs and why, concentration progress and remaining-semester options;
 - a **course crosswalk** of all 202 current PSDL courses in the Bulletin, showing which requirement and concentrations each one counts toward;
 - **`rules.js`**, every rule as reviewable data with its source. It can serve directly as the specification for fixing the LionPATH requirement lines (Option A below).
 
@@ -74,7 +74,7 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 
 - **Nothing leaves the browser.** The PDF is read with `File.arrayBuffer()` and parsed in memory. `connect-src 'none'` in the CSP makes the browser refuse every `fetch`, XHR, WebSocket and beacon, so even a bug could not upload a transcript.
 - **Nothing is stored.** No cookies, localStorage, IndexedDB or service worker. Reloading the page clears it.
-- **No identity is read.** `parser.js` never extracts the name or student ID; the test suite checks this. The registrar email the page drafts has `[Name]`/`[PSU ID]` placeholders.
+- **No identity is read.** `parser.js` never extracts the name or student ID; the test suite checks this.
 - **No third-party code.** pdf.js is vendored (`vendor/`, Apache-2.0, `vendor/pdfjs-LICENSE`) rather than loaded from a CDN. SHA-256:
   - `pdf.min.js`: `27fc2a057a00f92a4334ad06e17dbd7259912954e9fb7f76400bcca5fd190a9c`
   - `pdf.worker.min.js`: `1baa1844c89c80a5b2797c916e75ab29254be46d8e9cb53cb6364d7aad84be36`

@@ -18,7 +18,6 @@ import { runAudit, describeCatalog, statusWord } from "./engine.js";
 import { sampleTranscriptLines } from "./sample.js";
 
 const DATA = { rules, catalog, lists, concentrations, chart };
-const REGISTRAR = "registrar@pennstatelaw.psu.edu";
 
 // ---------------------------------------------------------------------------------------------
 // Tiny DOM helper. Children that are strings become TEXT nodes, never HTML.
@@ -150,52 +149,25 @@ function renderRequirements(r) {
       `Credits: ${fmt(r.totals.earned)} earned, ${fmt(r.totals.inProgress)} in progress, ${fmt(r.totals.enrolled)} enrolled for a future term = ${fmt(r.totals.projected)} projected. "On track" assumes a C or better in every unfinished course.`));
 }
 
+/**
+ * Reference only: which LionPATH audit lines disagree with this audit, and why. Nothing is sent
+ * anywhere; the corresponding fix for each line is in rules.js (lionpath.fix) and IT-HANDOFF.md.
+ */
 function renderAuditErrors(r) {
   if (!r.auditErrors.length) {
-    return section("LionPATH audit errors", h("p", {}, "None found: no course on your record is affected by the miscoded LionPATH lines."));
+    return section("Where LionPATH's audit differs", h("p", {}, "Nowhere: no course on this record is affected by the miscoded LionPATH lines."));
   }
-  const email = buildEmail(r);
-  const box = h("textarea", { class: "ga-email", rows: 14, readonly: true, "aria-label": "Email text for the registrar" }, email);
-  return section(`LionPATH audit errors to send to the registrar (${r.auditErrors.length})`,
-    h("p", {}, "LionPATH's degree audit for this cohort only recognizes pre-merger course codes, so it shows these requirements as not satisfied. Each one is satisfied (or on track) under the written rules:"),
+  return section(`Where LionPATH's audit differs (${r.auditErrors.length})`,
+    h("p", {}, "LionPATH's degree audit for this cohort only recognizes pre-merger course codes, so it shows these requirements as not satisfied. Under the written rules, each one is satisfied (or on track) by the courses below. This is for reference; nothing here changes LionPATH."),
     h("ul", { class: "ga-errors" }, r.auditErrors.map((e) =>
       h("li", {},
         h("h3", {}, e.requirement),
         h("dl", {},
           h("dt", {}, "Your courses"), h("dd", {}, e.satisfiedBy.join("; ")),
           h("dt", {}, "LionPATH accepts"), h("dd", {}, e.lionpathAccepts),
-          h("dt", {}, "Why it fails"), h("dd", {}, e.problem),
-          h("dt", {}, "Fix"), h("dd", {}, e.fix))))),
-    h("h3", {}, "Ready-to-send email"),
-    h("p", { class: "ga-muted small" }, `Add your name and PSU ID before sending to ${REGISTRAR}. The page never reads them from the transcript.`),
-    box,
+          h("dt", {}, "Why it misses them"), h("dd", {}, e.problem))))),
     h("div", { class: "ga-actions ga-no-print" },
-      h("button", { type: "button", class: "ga-btn", onclick: async (ev) => {
-        try { await navigator.clipboard.writeText(email); ev.target.textContent = "Copied"; }
-        catch { box.select(); ev.target.textContent = "Press ⌘C / Ctrl+C to copy"; }
-      } }, "Copy email text"),
       h("button", { type: "button", class: "ga-btn ga-btn-secondary", onclick: () => window.print() }, "Print this audit")));
-}
-
-/** Plain-text email to the registrar. Contains course data only; no name or ID. */
-function buildEmail(r) {
-  const lines = [
-    `To: ${REGISTRAR}`,
-    "Subject: Degree audit miscoding: pre-merger requirement lines (UP J.D., admitted before Fall 2025)",
-    "",
-    "Hello,",
-    "",
-    "My LionPATH degree audit shows the requirements below as not satisfied because the requirement lines only recognize pre-merger course codes. Could you correct them on my record?",
-    "",
-  ];
-  r.auditErrors.forEach((e, i) => {
-    lines.push(`${i + 1}. ${e.requirement}`);
-    lines.push(`   Satisfied by: ${e.satisfiedBy.join("; ")}`);
-    lines.push(`   LionPATH accepts only: ${e.lionpathAccepts}`);
-    lines.push("");
-  });
-  lines.push("Thank you,", "[Name]", "[PSU ID]");
-  return lines.join("\n");
 }
 
 function renderResidency(r) {
