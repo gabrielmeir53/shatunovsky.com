@@ -20,8 +20,10 @@
   <meta name="description" content="Unofficial graduation audit for University Park J.D. students admitted before Fall 2025. Runs entirely in your browser.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../css/style.css?v=5">
-  <link rel="stylesheet" href="audit.css">
-  <script type="module" src="app.js"></script>
+  <!-- Cloudflare caches .js/.css at the edge for 4 hours. Bump ?v= whenever app.js or audit.css
+       changes so visitors get the new file immediately (same pattern as ../css/style.css?v=5). -->
+  <link rel="stylesheet" href="audit.css?v=2">
+  <script type="module" src="app.js?v=2"></script>
 </head>
 <body>
 

@@ -56,6 +56,7 @@ The page is static files with no server code. To move it:
    ```
 4. `index.html` links `../css/style.css` and `/favicon.svg` from the personal site. Copy those or replace them with PSU styling; `audit.css` holds everything page-specific.
 5. Remove the `shatunovsky.com` references in `index.html` and this document.
+6. Caching: the demo host (Cloudflare) caches `.js`/`.css` for 4 hours, so `index.html` loads `app.js?v=N` and `audit.css?v=N`. Bump `N` when those files change, or serve `grad-audit/` with a short cache lifetime. If a data or engine module changes, purge the cache or version its import as well.
 
 ## 4. Architecture
 
