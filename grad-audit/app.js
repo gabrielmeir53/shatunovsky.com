@@ -13,9 +13,11 @@ import catalog from "./data/catalog.js";
 import lists from "./data/intranet-lists.js";
 import concentrations from "./data/concentrations.js";
 import chart from "./data/course-chart.js";
-import { parseTranscriptText, extractPdfLines } from "./parser.js";
+// "?v=3": the demo host (Cloudflare) caches .js files for 4 hours. A changed module gets a new
+// query string here so visitors load the new version at once. Not needed on a host without that cache.
+import { parsePdfPages, parseAnyText, extractPdfPages } from "./parser.js?v=3";
 import { runAudit, describeCatalog, statusWord } from "./engine.js";
-import { sampleTranscriptLines } from "./sample.js";
+import { sampleTranscriptLines, sampleReportPages } from "./sample.js?v=3";
 
 const DATA = { rules, catalog, lists, concentrations, chart };
 
@@ -61,23 +63,27 @@ function setStatus(msg, isError = false) {
 async function handleFile(file) {
   if (!file) return;
   if (file.type && file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
-    setStatus("That isn't a PDF. Save the LionPATH advising transcript as a PDF and try again.", true);
+    setStatus("That isn't a PDF. Save the LionPATH advising transcript or requirements report as a PDF and try again.", true);
     return;
   }
   setStatus("Reading the PDF on this device…");
+  let pages;
   try {
     const pdfjs = await import("./vendor/pdf.min.js");
     pdfjs.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdf.worker.min.js", import.meta.url).href;
-    const text = await extractPdfLines(pdfjs, new Uint8Array(await file.arrayBuffer()));
-    audit(text, "your transcript");
+    pages = await extractPdfPages(pdfjs, new Uint8Array(await file.arrayBuffer()));
   } catch (err) {
     console.error(err);
-    setStatus("The PDF couldn't be read. Try the \"paste the transcript text\" option below.", true);
+    setStatus("The PDF couldn't be read. Try the \"paste the text\" option below.", true);
+    return;
   }
+  audit(parsePdfPages(pages), "your PDF");
 }
 
-function audit(text, label) {
-  const parsed = parseTranscriptText(text);
+const FORMAT_NAMES = { advisingTranscript: "advising transcript", requirementsReport: "requirements report" };
+
+/** Render an audit for parser output, or show the parser's warnings if no courses were found. */
+function audit(parsed, label) {
   if (!parsed.courses.length) {
     setStatus(parsed.warnings.join(" "), true);
     $("results").hidden = true;
@@ -85,7 +91,8 @@ function audit(text, label) {
   }
   lastCourses = parsed;
   render(parsed);
-  setStatus(`Audited ${label}: ${parsed.courses.length} courses in ${parsed.terms.length} terms.`);
+  const kind = FORMAT_NAMES[parsed.format] ? ` (read as a LionPATH ${FORMAT_NAMES[parsed.format]})` : "";
+  setStatus(`Audited ${label}${kind}: ${parsed.courses.length} courses in ${parsed.terms.length} terms.`);
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -296,8 +303,9 @@ function init() {
   for (const t of ["dragenter", "dragover"]) drop.addEventListener(t, (ev) => { ev.preventDefault(); drop.classList.add("is-over"); });
   for (const t of ["dragleave", "drop"]) drop.addEventListener(t, () => drop.classList.remove("is-over"));
   drop.addEventListener("drop", (ev) => { ev.preventDefault(); handleFile(ev.dataTransfer.files[0]); });
-  $("try-sample").addEventListener("click", () => audit(sampleTranscriptLines().join("\n"), "the synthetic sample transcript"));
-  $("use-paste").addEventListener("click", () => audit($("paste").value, "the pasted text"));
+  $("try-sample").addEventListener("click", () => audit(parseAnyText(sampleTranscriptLines().join("\n")), "the synthetic sample"));
+  $("try-sample-report").addEventListener("click", () => audit(parsePdfPages(sampleReportPages()), "the synthetic sample"));
+  $("use-paste").addEventListener("click", () => audit(parseAnyText($("paste").value), "the pasted text"));
   $("profdev").addEventListener("change", () => lastCourses && render(lastCourses));
   renderCatalog();
   renderHow();

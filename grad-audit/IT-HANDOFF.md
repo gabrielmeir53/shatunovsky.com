@@ -1,6 +1,6 @@
 # Class of 2027 Graduation Audit: handoff for PSDL IT
 
-**Demo:** https://shatunovsky.com/grad-audit/ (click "Try a sample transcript", which loads synthetic data)
+**Demo:** https://shatunovsky.com/grad-audit/ (the "Try a sample" buttons load a synthetic student)
 **Author:** Gabriel Shatunovsky (J.D. '27, University Park), gabriel@shatunovsky.com
 **Status:** a working prototype on a personal site, offered to be moved to a Penn State host or used as the spec for fixing LionPATH. It is not an official Penn State system.
 
@@ -12,7 +12,7 @@ University Park J.D. students admitted **before Fall 2025** (the Class of 2027) 
 
 This folder contains:
 
-- a **static web page** that reads a student's LionPATH advising transcript and produces a corrected audit, a reference list of where LionPATH's audit differs and why, concentration progress and remaining-semester options;
+- a **static web page** that reads either of two LionPATH PDFs (the *Advising Transcript* or the *My Academic Requirements* report) and produces a corrected audit, a reference list of where LionPATH's audit differs and why, concentration progress and remaining-semester options;
 - a **course crosswalk** of all 202 current PSDL courses in the Bulletin, showing which requirement and concentrations each one counts toward;
 - **`rules.js`**, every rule as reviewable data with its source. It can serve directly as the specification for fixing the LionPATH requirement lines (Option A below).
 
@@ -56,13 +56,25 @@ The page is static files with no server code. To move it:
    ```
 4. `index.html` links `../css/style.css` and `/favicon.svg` from the personal site. Copy those or replace them with PSU styling; `audit.css` holds everything page-specific.
 5. Remove the `shatunovsky.com` references in `index.html` and this document.
+6. Caching: the demo host (Cloudflare) caches `.js`/`.css` for 4 hours, so `index.html` loads `app.js?v=N` and `audit.css?v=N`. Bump `N` when those files change, or serve `grad-audit/` with a short cache lifetime. If a data or engine module changes, purge the cache or version its import as well.
 
-## 4. Architecture
+## 4. Inputs
+
+The parser detects which LionPATH document it was given (`parser.js` `detectFormat()`):
+
+| Document | Where students get it | How it's read |
+|---|---|---|
+| Advising Transcript | Academic Records › View Advising Transcript | Single column; term headings ("Fall 2025") followed by course rows with attempted/earned/grade/points. |
+| Academic Requirements report (Oracle Analytics Publisher) | Degree Planning and Progress › My Academic Requirements › View Report as PDF | Two columns per page. Only the closing **Course History** table is read (Subject, Catalog #, Title, Units, Term, Grade, Type). It lists every course once, and it can run from the right column of one page into the left column of the next. The requirement tables above it are ignored: they repeat courses and reflect LionPATH's miscoded lines. Wrapped titles are rejoined using text positions, and "Course Topic: NN - Topic" loses its section number. |
+
+Both produce the same course records, and a test checks that the synthetic student gives identical audits from either PDF. Synthetic samples of both are included: `sample-transcript.pdf` and `sample-requirements-report.pdf`.
+
+## 5. Architecture
 
 ```
   student's PDF ──► parser.js ──────────► engine.js ─────────────► app.js ──► page
-  (read locally     extractPdfLines()      runAudit()                 renders with
-   by the browser)  parseTranscriptText()  describeCatalog()          textContent only
+  (read locally     extractPdfPages()      runAudit()                 renders with
+   by the browser)  parsePdfPages()        describeCatalog()          textContent only
                          ▲                     ▲
                     vendor/pdf.js        rules.js + data/*.js
                     (pinned 4.10.38)     (all rules and lists)
@@ -70,11 +82,11 @@ The page is static files with no server code. To move it:
 
 Everything runs in the browser. There is no build step: the files are plain ES modules you can read top to bottom.
 
-## 5. Data and privacy (FERPA)
+## 6. Data and privacy (FERPA)
 
 - **Nothing leaves the browser.** The PDF is read with `File.arrayBuffer()` and parsed in memory. `connect-src 'none'` in the CSP makes the browser refuse every `fetch`, XHR, WebSocket and beacon, so even a bug could not upload a transcript.
 - **Nothing is stored.** No cookies, localStorage, IndexedDB or service worker. Reloading the page clears it.
-- **No identity is read.** `parser.js` never extracts the name or student ID; the test suite checks this.
+- **No identity is read.** `parser.js` never extracts the name, student ID, GPA or advisor that both documents print in their headers; the test suite checks this for both formats.
 - **No third-party code.** pdf.js is vendored (`vendor/`, Apache-2.0, `vendor/pdfjs-LICENSE`) rather than loaded from a CDN. SHA-256:
   - `pdf.min.js`: `27fc2a057a00f92a4334ad06e17dbd7259912954e9fb7f76400bcca5fd190a9c`
   - `pdf.worker.min.js`: `1baa1844c89c80a5b2797c916e75ab29254be46d8e9cb53cb6364d7aad84be36`
@@ -82,14 +94,14 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 - **How to verify:** open DevTools › Network, load a transcript, and confirm the only requests are the page's own files (`vendor/pdf.min.js` and `vendor/pdf.worker.min.js` load when a PDF is chosen). Requests from `chrome-extension://` URLs come from the viewer's browser extensions and are outside any page's control. A clean browser profile shows none.
 - **Testing** uses only the synthetic transcript in `sample.js` / `sample-transcript.pdf`. No real student record is in the repository.
 
-## 6. File-by-file guide
+## 7. File-by-file guide
 
 | File | What it is | Edit it when |
 |---|---|---|
 | `index.html` | Page shell, CSP, static text | Wording or hosting changes |
 | `audit.css` | Page styles (incl. print) | Styling |
 | `app.js` | Only file that touches the DOM: file input → parse → audit → render | UI changes |
-| `parser.js` | Advising Transcript PDF/text → course records | LionPATH changes the transcript layout |
+| `parser.js` | LionPATH PDF (either format) or pasted text → course records | LionPATH changes either document's layout |
 | `engine.js` | The audit: statuses, requirement checks, double-counting, residency, caps, concentrations, planner, crosswalk | Rule *logic* changes (rare) |
 | `match.js` | Title normalization used to join lists to the catalog | A new kind of spelling difference appears |
 | **`rules.js`** | **All requirements, sources, LionPATH observations, credit caps, title aliases, assumptions** | **Any rule or policy change** |
@@ -97,27 +109,28 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 | `data/intranet-lists.js` | Seminar and 303(c) lists from the Intranet | The Intranet lists change |
 | `data/concentrations.js` | 22 concentration course lists | The concentration PDF changes |
 | `data/course-chart.js` | FA25–SP27 anticipated offerings | A new course chart is published |
-| `sample.js`, `sample-transcript.pdf` | Synthetic student for demo and tests | Adding a test scenario |
+| `sample.js`, `sample-transcript.pdf`, `sample-requirements-report.pdf` | Synthetic student in both formats, for demo and tests | Adding a test scenario |
 | `tools/build-catalog.mjs` | Downloads the Bulletin's law subjects → `data/catalog.js` | Each semester |
 | `tools/check-data.mjs` | Consistency report for the data files | After any data edit |
-| `tools/make-sample-transcript.mjs` | Writes `sample-transcript.pdf` from `sample.js` | After editing `sample.js` |
+| `tools/make-sample-transcript.mjs` | Writes both sample PDFs from `sample.js` | After editing `sample.js` |
 | `test/engine.test.mjs` | Tests (Node's built-in runner, no packages) | With any logic change |
 
-## 7. How to update rules
+## 8. How to update rules
 
 - **A requirement changes:** edit its entry in `rules.js` › `REQUIREMENTS`. Each entry declares how a course qualifies: `codes`, `subjects`, `catalogTag` (Bulletin description says so) or `list` (Intranet list).
 - **A list changes:** edit `data/intranet-lists.js` or `data/concentrations.js`, then run `node grad-audit/tools/check-data.mjs`. It lists any entry that doesn't match a catalog course: either a Special Topics or discontinued course (fine) or a typo or rename (add a `TITLE_ALIASES` entry with a `note`).
 - **New semester:** run `node grad-audit/tools/build-catalog.mjs`, review the `data/catalog.js` diff, update `data/course-chart.js`, then run the checks and tests.
 
-## 8. Tests
+## 9. Tests
 
 ```
-node --test grad-audit/test/engine.test.mjs       # 18 tests, Node 18+
+node --test grad-audit/test/engine.test.mjs       # 25 tests (+1 optional), Node 18+
 node grad-audit/tools/check-data.mjs              # data consistency
 ```
 
 The tests cover:
 - parsing of graded, CR, withdrawn and ungraded rows, plus Course Topic lines;
+- the requirements report: format detection, reading order across columns and pages, wrapped titles, glued units, ignoring requirement tables/header/footer, and an identical audit to the transcript;
 - that no name or ID is captured;
 - title normalization, and that every alias target exists in the catalog;
 - grade minimums and in-progress vs enrolled;
@@ -128,7 +141,7 @@ The tests cover:
 - the crosswalk (Employment Discrimination: 303(c) + 7 concentrations);
 - the Bulletin parser.
 
-## 9. Assumptions (judgment calls the written rules don't settle)
+## 10. Assumptions (judgment calls the written rules don't settle)
 
 The same list is in `rules.js` › `ASSUMPTIONS` and shown on the page under "How this audit decides". Each names the code that implements it, so the registrar can approve or change it in one place.
 
@@ -146,9 +159,9 @@ The same list is in `rules.js` › `ASSUMPTIONS` and shown on the page under "Ho
 | A10 | Concentration "Additional Experiential Opportunities" (externships, moot court, …) need Associate Dean approval, so they are never counted automatically. | `engine.js` `scoreConcentrations()` |
 | A11 | W/F/incomplete earn nothing; a grade below C still earns credit toward 88 but doesn't satisfy C-or-better rules or concentrations. | `engine.js` `gradeMeets()` |
 
-## 10. Known limitations
+## 11. Known limitations
 
-- **Transcript layout.** The parser expects the current LionPATH *Advising Transcript* layout, one course per row: `SUBJ NUM Description Attempted Earned Grade Points`. A layout change shows up as visible "could not be read" warnings rather than silent omissions. A paste-text fallback exists.
-- **Snapshots.** The catalog (Bulletin, 11/04/2026), Intranet lists (Oct 2026), concentrations (Oct 2026) and course chart (9/25/2026) are snapshots and need refreshing when the sources change (see §7).
+- **Document layouts.** The parser expects the current LionPATH *Advising Transcript* layout and the current *My Academic Requirements* PDF, whose Course History table must be present. A layout change shows up as visible "could not be read" warnings rather than silent omissions. A paste-text fallback exists, though without positions it can't rejoin wrapped report titles; codes still resolve through the catalog.
+- **Snapshots.** The catalog (Bulletin, 11/04/2026), Intranet lists (Oct 2026), concentrations (Oct 2026) and course chart (9/25/2026) are snapshots and need refreshing when the sources change (see §8).
 - **Not checkable from a transcript:** full tuition and the 20-hour work limit for residency, journal/moot court/mock trial caps, pass/fail elections, petitions approved by the Associate Dean, and transfer credit.
 - **Scope:** University Park J.D. students admitted before Fall 2025 only. Carlisle-admitted and post-2025 students have different requirements.

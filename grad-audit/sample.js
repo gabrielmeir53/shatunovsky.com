@@ -97,3 +97,73 @@ export function sampleTranscriptLines() {
   return L;
 }
 
+
+/**
+ * The same synthetic student as a LionPATH "My Academic Requirements" report (View Report as PDF),
+ * as positioned text items: the shape pdf.js produces from the real report. Reproduces the layout
+ * details the parser has to handle:
+ *   - two columns per page, Letter size (612 pt wide);
+ *   - a requirement table in the left column (ignored by the parser) beside the Course History table;
+ *   - Course History starting in the RIGHT column of page 1 and continuing in the LEFT column of page 2;
+ *   - long titles wrapping onto the next line in the Title column;
+ *   - a title and its units printed as one fragment ("LEG RES TLS & STRT2.00");
+ *   - "Course Topic: NN - Topic" lines under Special Topics courses;
+ *   - header (name/ID/GPA/advisor) and footer lines on every page.
+ * @returns {Array<{width:number, items:Array<{x:number,y:number,w:number,str:string}>}>}
+ */
+export function sampleReportPages() {
+  const WIDTH = 612;
+  const item = (x, y, str) => ({ x, y, w: str.length * 4, str });
+  const header = () => [
+    item(133, 762, "SAMPLE STUDENT:"), item(214, 762, "000000000"),
+    item(313, 763, "Cum GPA:"), item(355, 763, "3.000"), item(417, 763, "Advisor:"), item(417, 753, "Sample,Advisor"),
+    item(133, 752, "Campus:"), item(170, 752, "University Park"), item(133, 742, "Report Generated on:"), item(218, 742, "11/04/2026"),
+  ];
+  const footer = (n) => [item(306, 30, "GPA rounds to 2 digits"), item(395, 30, "the final zero is a place holder"), item(517, 30, `Page ${n} of 2`)];
+
+  // Left column of page 1: a requirement table, which repeats courses and must be ignored.
+  const p1 = [...header(), item(35, 700, "Academic Requirements"), item(35, 680, "Upper Level Writing Seminar - C or higher required"),
+    item(40, 670, "Not Satisfied: Complete one Upper Level Writing Seminar course"),
+    item(35, 650, "Term"), item(73, 650, "Subject"), item(113, 650, "Cat #"), item(163, 650, "Course Title"), item(230, 650, "Units"), item(263, 650, "Grade"),
+    item(35, 640, "FA 2026"), item(73, 640, "LWELA"), item(116, 640, "910"), item(163, 640, "Energy Lw and"), item(233, 640, "3.00"), item(262, 640, "IP"),
+    item(163, 631, "Pol"),
+    ...footer(1)];
+  const p2 = [...header(), ...footer(2)];
+
+  // Course History rows, in transcript order.
+  const SEASON = { Fall: "FA", Spring: "SP", Summer: "SU" };
+  const rows = SAMPLE_TERMS.flatMap(([term, courses]) => courses.map(([subj, num, desc, att, , grade, topic]) => {
+    const [season, year] = term.split(" ");
+    return { subj, num, desc, units: att.toFixed(2), term: `${SEASON[season]} ${year}`, grade, topic };
+  }));
+
+  // Column x positions for the right and left placements of the Course History table.
+  const R = { subj: 317, num: 349, title: 392, units: 475, term: 503, grade: 542, type: 572 };
+  const L = { subj: 29, num: 61, title: 104, units: 186, term: 214, grade: 254, type: 285 };
+  p1.push(item(426, 558, "Course History"),
+    item(R.subj, 547, "Subject"), item(R.num, 547, "Catalog #"), item(R.title, 547, "Title"), item(R.units, 547, "Units"), item(R.term, 547, "Term"), item(R.grade, 547, "Grade"), item(R.type, 547, "Type"));
+
+  let page = p1, C = R, y = 538;
+  rows.forEach((r, i) => {
+    if (y < 60 && page === p1) { page = p2; C = L; y = 716; } // continue in page 2, left column
+    // Long titles wrap at the Title column; the first PSLFY 908 row glues title and units together.
+    const words = r.desc.split(" ");
+    let first = r.desc, rest = null;
+    if (r.desc.length > 18 && words.length > 1) {
+      let cut = words.length - 1;
+      while (cut > 1 && words.slice(0, cut).join(" ").length > 18) cut--;
+      first = words.slice(0, cut).join(" ");
+      rest = words.slice(cut).join(" ");
+    }
+    page.push(item(C.subj, y, r.subj), item(C.num, y, r.num));
+    if (r.subj === "PSLFY" && r.num === "908") page.push(item(C.title, y, `${r.desc}${r.units}`));
+    else page.push(item(C.title, y, first), item(C.units, y, r.units));
+    page.push(item(C.term, y, r.term));
+    if (r.grade) page.push(item(C.grade, y, r.grade), item(C.type, y, "EN"));
+    else page.push(item(C.type + 2, y, "IP"));
+    if (rest && !(r.subj === "PSLFY" && r.num === "908")) page.push(item(C.title, y - 9, rest));
+    if (r.topic) page.push(item(C.subj + 10, y - 14, "Course Topic:"), item(C.subj + 59, y - 14, `${10 + i} - ${r.topic}`));
+    y -= r.topic ? 29 : 15;
+  });
+  return [{ width: WIDTH, items: p1 }, { width: WIDTH, items: p2 }];
+}
