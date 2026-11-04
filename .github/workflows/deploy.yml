@@ -27,6 +27,11 @@ jobs:
       - name: Validate HTML
         run: npm run lint
 
+      - name: Test graduation audit (grad-audit/)
+        run: |
+          node --test grad-audit/test/engine.test.mjs
+          node grad-audit/tools/check-data.mjs > /dev/null
+
       # rsync --delete from an empty or half-built folder would wipe the live site, so refuse to
       # deploy unless the build output looks complete.
       - name: Sanity-check build output

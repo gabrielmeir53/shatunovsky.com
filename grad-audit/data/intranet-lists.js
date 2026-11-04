@@ -1,0 +1,431 @@
+/**
+ * data/intranet-lists.js — requirement course lists the law school publishes on the Dickinson Law
+ * Intranet (SharePoint), copied October 2026:
+ *   - Seminar Courses (upper-level writing seminar requirement)
+ *   - ABA Standard 303(c) Civil Rights, Equal Protection and Social Justice Courses (updated 3/26/2026)
+ *   - the double-counting rule printed on both pages
+ * Titles are verbatim; a parenthetical qualifier such as "(Carlisle, Spring 2023)" is split into
+ * `note`. To update: re-copy the page text into these arrays.
+ */
+export default {
+ "_readme": "Requirement course lists maintained by the law school on the Dickinson Law Intranet (SharePoint), copied October 2026. Titles are verbatim; a parenthetical qualifier is split into 'note'.",
+ "seminar": {
+  "source": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Seminars.aspx",
+  "rule": "All students must complete with a grade of at least C one course designated as a seminar course.",
+  "currentLWSEM": [
+   {
+    "title": "Access to Justice and Equity"
+   },
+   {
+    "title": "Cybersecurity Law & Policy Seminar"
+   },
+   {
+    "title": "Education Law Seminar"
+   },
+   {
+    "title": "Employment Law Seminar"
+   },
+   {
+    "title": "Federal Crimes"
+   },
+   {
+    "title": "Health Justice Seminar"
+   },
+   {
+    "title": "Health Law, Policy and Ethics in Aging Seminar"
+   },
+   {
+    "title": "Human Rights, Intersectionality, & the Law"
+   },
+   {
+    "title": "International Trade Law Policy"
+   },
+   {
+    "title": "Law & Artificial Intelligence Seminar"
+   },
+   {
+    "title": "Law and the Arts"
+   },
+   {
+    "title": "Law and Philosophy Seminar"
+   },
+   {
+    "title": "Law and the Holocaust Seminar"
+   },
+   {
+    "title": "Minority Business Ownership"
+   },
+   {
+    "title": "Policy Issues in Corporate Crimes Seminar"
+   },
+   {
+    "title": "Protection of Individual Rights under State Constitutions Seminar"
+   },
+   {
+    "title": "Regulatory & Legislative Practice Seminar"
+   },
+   {
+    "title": "Standards of Review"
+   },
+   {
+    "title": "Sustainable Development and the Law Seminar"
+   },
+   {
+    "title": "Tax Policy Seminar"
+   },
+   {
+    "title": "The United Nations and International Law Seminar"
+   },
+   {
+    "title": "Trans Rights Seminar"
+   },
+   {
+    "title": "Workers Compensation Law"
+   }
+  ],
+  "formerCarlisle": [
+   {
+    "title": "Advanced Persuasion Seminar",
+    "note": "Spring 2021 only"
+   },
+   {
+    "title": "Art Law Seminar",
+    "note": "Fall 2023"
+   },
+   {
+    "title": "Child Welfare Law and Policy Seminar"
+   },
+   {
+    "title": "Congressional Investigations Seminar"
+   },
+   {
+    "title": "Cybersecurity Law & Policy Seminar"
+   },
+   {
+    "title": "Education Law Seminar"
+   },
+   {
+    "title": "Electronic Evidence Seminar",
+    "note": "last offered Fall 2022"
+   },
+   {
+    "title": "Employment Law Seminar"
+   },
+   {
+    "title": "Health Justice Seminar"
+   },
+   {
+    "title": "Health Law, Policy, and Ethics in Aging Seminar"
+   },
+   {
+    "title": "History of International Law Seminar"
+   },
+   {
+    "title": "International Human Rights Law Seminar"
+   },
+   {
+    "title": "Law and Artificial Intelligence"
+   },
+   {
+    "title": "Law & Democracy Seminar"
+   },
+   {
+    "title": "Law & International Development Seminar"
+   },
+   {
+    "title": "Law in Emergency Seminar"
+   },
+   {
+    "title": "Lawyering and Ethics for the Business Attorney Seminar"
+   },
+   {
+    "title": "National Security Law Seminar",
+    "note": "Fall 2021 only"
+   },
+   {
+    "title": "Protection of Individual Rights under State Constitutions Seminar"
+   },
+   {
+    "title": "Regulatory and Legislative Practice Seminar"
+   },
+   {
+    "title": "Russian Law Seminar"
+   },
+   {
+    "title": "Tax Policy Seminar"
+   },
+   {
+    "title": "Trans Rights Seminar"
+   }
+  ],
+  "formerUniversityParkULWR": [
+   {
+    "title": "Advanced Corporate Law Seminar"
+   },
+   {
+    "title": "AI and the Law",
+    "note": "ULWR 997, Spring 2022 only"
+   },
+   {
+    "title": "Business Planning for M&A II Seminar"
+   },
+   {
+    "title": "Class Actions Seminar"
+   },
+   {
+    "title": "Climate Change Law & Policy Law"
+   },
+   {
+    "title": "Common Law Reasoning & Statutory Interpretation Seminar"
+   },
+   {
+    "title": "Comparative Constitutional Law Seminar"
+   },
+   {
+    "title": "COVID-19: Law and Tech Policy",
+    "note": "ULWR 997, Fall 2020 only"
+   },
+   {
+    "title": "Critical",
+    "note": "Dis)Ability Theory and Carceral Culture (ULWR 997, Fall 2024 only"
+   },
+   {
+    "title": "Cybercrime Seminar",
+    "note": "ULWR 997, Fall 2021 only"
+   },
+   {
+    "title": "Election Security and Foreign Interference",
+    "note": "ULWR 997, Fall 2021 only"
+   },
+   {
+    "title": "Election Security Seminar",
+    "note": "ULWR 997, Fall 2020 only"
+   },
+   {
+    "title": "Electronic Evidence Seminar"
+   },
+   {
+    "title": "Federal Crimes Seminar"
+   },
+   {
+    "title": "Federal Regulatory and Legislative Practice Seminar"
+   },
+   {
+    "title": "Food Law"
+   },
+   {
+    "title": "Global Privacy and Data Protection",
+    "note": "ULWR 997, Spring 2022 only"
+   },
+   {
+    "title": "Human Rights, Intersectionality and the Law"
+   },
+   {
+    "title": "Intensive Legal Writing and Drafting"
+   },
+   {
+    "title": "International Financial Law Seminar"
+   },
+   {
+    "title": "International Human Rights Seminar"
+   },
+   {
+    "title": "International Investment Law and Investor-State Dispute Settlement",
+    "note": "ULWR 997, Fall 2024 only"
+   },
+   {
+    "title": "International Tax Policy Seminar",
+    "note": "ULWR 997, Fall 2022 only"
+   },
+   {
+    "title": "Judicial Decisionmaking",
+    "note": "ULWR 997, Fall 2022 only"
+   },
+   {
+    "title": "Law of Artistic Persons and Properties Seminar"
+   },
+   {
+    "title": "Law of the Police Seminar"
+   },
+   {
+    "title": "Minority Business Ownership: The Lawyer's Role in Closing the Minority-White Gap"
+   },
+   {
+    "title": "Policy Issues in Corporate Crime Seminar"
+   },
+   {
+    "title": "Standards of Review"
+   },
+   {
+    "title": "Tax Policy Seminar"
+   },
+   {
+    "title": "The Law of Protest: Civil Disobedience, Expressive Rights, and Public Order"
+   },
+   {
+    "title": "The Supreme Court in Comparative Perspective Seminar"
+   },
+   {
+    "title": "The United Nations and International Law Seminar"
+   },
+   {
+    "title": "Workers' Compensation Law"
+   }
+  ]
+ },
+ "aba303c": {
+  "source": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Civil-Rights,-Equal-Protection-and-Social-Justice-Courses.aspx",
+  "lastUpdated": "2026-03-26",
+  "rule": "All students must complete with a grade of at least C one course beyond the first-year required courses designated as focused on civil rights, equal protection, or social justice.",
+  "courses": [
+   {
+    "title": "Advanced Criminal Procedure"
+   },
+   {
+    "title": "Access to Justice and Equity Seminar"
+   },
+   {
+    "title": "American Indian Law"
+   },
+   {
+    "title": "Asylum and Refugee Law"
+   },
+   {
+    "title": "Child Welfare Law & Policy Seminar"
+   },
+   {
+    "title": "Civil Liberties Litigation"
+   },
+   {
+    "title": "Comparative Constitutional Law Seminar"
+   },
+   {
+    "title": "Constitutional Law II",
+    "note": "Equal Protection & Civil Rights"
+   },
+   {
+    "title": "Constitutional Law of Religion"
+   },
+   {
+    "title": "Corporate Social Responsibility"
+   },
+   {
+    "title": "Criminal Procedure",
+    "note": "Carlisle and outside the first-year curriculum only"
+   },
+   {
+    "title": "Criminal Procedure: Applied Skills"
+   },
+   {
+    "title": "Criminal Sentencing",
+    "note": "Carlisle, Spring 2023"
+   },
+   {
+    "title": "Death Penalty in the U.S.",
+    "note": "Carlisle, Spring 2023"
+   },
+   {
+    "title": "Education Law Seminar"
+   },
+   {
+    "title": "Election Law"
+   },
+   {
+    "title": "Employment Discrimination"
+   },
+   {
+    "title": "Family Law"
+   },
+   {
+    "title": "Federal Crimes Seminar"
+   },
+   {
+    "title": "First Amendment Law"
+   },
+   {
+    "title": "Gender and Sexuality Law",
+    "note": "Law and Sexuality"
+   },
+   {
+    "title": "Health Justice Seminar"
+   },
+   {
+    "title": "Higher Education Law Practice"
+   },
+   {
+    "title": "Human Rights, Intersectionality, & the Law"
+   },
+   {
+    "title": "Immigration Law"
+   },
+   {
+    "title": "Information Privacy Law"
+   },
+   {
+    "title": "Innocence & Wrongful Convictions"
+   },
+   {
+    "title": "Intellectual Property and Social Justice",
+    "note": "Carlisle, Spring 2026"
+   },
+   {
+    "title": "International Criminal Law"
+   },
+   {
+    "title": "International Human Rights Law Seminar"
+   },
+   {
+    "title": "International Justice Program"
+   },
+   {
+    "title": "Juvenile Law",
+    "note": "Children & the Law"
+   },
+   {
+    "title": "Law & (In)equity"
+   },
+   {
+    "title": "Law of Individuals with Disabilities"
+   },
+   {
+    "title": "Medical Legal Partnership Clinic"
+   },
+   {
+    "title": "Minority Business Ownership Seminar"
+   },
+   {
+    "title": "Multinational Corporations"
+   },
+   {
+    "title": "National Security Law"
+   },
+   {
+    "title": "Poverty Law"
+   },
+   {
+    "title": "Protection of Individual Rights under State Constitutions Seminar"
+   },
+   {
+    "title": "Race, Law, and Technology",
+    "note": "Carlisle, Fall 2023"
+   },
+   {
+    "title": "Race, Racism and American Law"
+   },
+   {
+    "title": "Veterans Benefits"
+   },
+   {
+    "title": "Women's Suffrage, the 19th Amendment and the Duality of a Movement",
+    "note": "Carlisle, Fall 2020 and Fall 2021"
+   },
+   {
+    "title": "selected non-law electives with Associate Dean approval"
+   }
+  ]
+ },
+ "doubleCounting": {
+  "source": "Dickinson Law Intranet (both pages)",
+  "rule": "Unless part of an approved joint degree program, course work may not be double counted to satisfy the J.D. graduation requirements (e.g., one course cannot fulfill both the seminar and experiential requirements). Students may take multiple seminars, using one for the seminar requirement and another for 303(c). Experiential coursework in excess of the 6-credit requirement may be applied toward 303(c)."
+ }
+};
