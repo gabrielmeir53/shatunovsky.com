@@ -93,7 +93,6 @@
 .ga-errors dt { color: var(--text-muted); font-family: var(--font-sans); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; padding-top: .15rem; }
 .ga-errors dd { margin: 0; }
 
-.ga-email { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; padding: .7rem; border: 1px solid var(--border); border-radius: 6px; background: #fbfbf9; }
 
 .ga-note { font-size: .88rem; color: var(--text-dim); background: #f4f3ee; border-radius: 6px; padding: .6rem .8rem; margin: .8rem 0; }
 .ga-warn { color: var(--open); font-size: .9rem; }
@@ -109,12 +108,11 @@
   .ga-table th, .ga-table td { padding: .45rem .5rem; }
 }
 
-/* Printed summary for the registrar: hide inputs and the long reference sections. */
+/* Printed summary: hide inputs and the long reference sections. */
 @media print {
   .ga-input, .ga-privacy, .ga-section:not(.ga-results-section), .ga-no-print { display: none !important; }
   .ga .container { max-width: none; padding: 0; }
   .ga-table-wrap, .ga-table-wrap.is-tall { max-height: none; overflow: visible; border: 0; }
   .ga-table th { position: static; }
   .ga-errors li, .ga-table tr { break-inside: avoid; }
-  a[href^="mailto"]::after { content: " (" attr(href) ")"; }
 }
