@@ -452,6 +452,66 @@ export default {
    }
   ]
  },
+ "experiential": {
+  "_readme": "Experiential Learning Courses page. The audit recognizes experiential courses by subject code (LWCLI, LWEXT, LWEXP, EXPR) and the Bulletin tag, so this list is reference data: it feeds the course picker's topic suggestions and tools/check-data.mjs, and documents the rule text for the registrar. Carlisle-only entries are omitted; see the page for them.",
+  "source": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Experiential-Learning-Skills-Courses.aspx",
+  "lastUpdated": "2025-09-16",
+  "universityParkRule": "Students admitted to Penn State Law (University Park) prior to reunification must complete with a grade of at least C, or a grade of Credit in Credit/No Credit courses, 6 credits in Experiential Learning from the upper level curriculum. The student may earn the experiential learning credits in an in-house legal clinic (LWCLI), an internship (LWEXT), a semester-in-practice (LWEXT), or in courses designated as simulation courses (LWEXP).",
+  "clinics": [
+   { "title": "Advanced Clinics" },
+   { "title": "Arts, Sports and Entertainment Law Clinic" },
+   { "title": "Center for Immigrants' Rights" },
+   { "title": "Children's Advocacy Clinic" },
+   { "title": "Civil Rights Appellate Clinic" },
+   { "title": "Community Law Clinic" },
+   { "title": "Entrepreneur Assistance Clinic" },
+   { "title": "Family Law Clinic" },
+   { "title": "Intellectual Property Clinic" },
+   { "title": "Manglona Lab or Gender and Economic Equity", "note": "sic; catalog LWCLI 940 Anuncia Donecia Songsong Manglona Lab for Gender and Economic Equity" },
+   { "title": "Medical Legal Partnership Clinic" },
+   { "title": "Rural Economic Development Clinic" },
+   { "title": "Veterans and Servicembmers Legal Clinic", "note": "sic" }
+  ],
+  "externships": [
+   { "title": "Externship Placement" },
+   { "title": "Semester-in-Practice" }
+  ],
+  "universityParkLWEXP": [
+   { "title": "Advanced Legal Writing", "note": "Spring 2026" },
+   { "title": "Arbitration", "note": "Spring 2026" },
+   { "title": "Blockchain, Cryptocurrency & the Law" },
+   { "title": "Civil Pre-Trial Practice and Advocacy" },
+   { "title": "Client Counseling" },
+   { "title": "Constitutional Negotiations", "note": "EXPR 997 code offered Spring 2024 ONLY" },
+   { "title": "Contract Drafting" },
+   { "title": "Estate Planning: Applied Skills", "note": "Spring 2026" },
+   { "title": "Handling Cases in the Real World" },
+   { "title": "Higher Education Law Practice" },
+   { "title": "Immigration Court Practice", "note": "Spring 2026" },
+   { "title": "Indigent Criminal Justice Trial Simulation" },
+   { "title": "Law Practice Management" },
+   { "title": "Litigation & Business Transactions" },
+   { "title": "Litigation Skills: Cross-Examination, Direct-Examination, and Deposition" },
+   { "title": "Preparation Practicum", "note": "EXPR 997 code offered Spring 2024 ONLY" },
+   { "title": "Mediation of Environmental and Public Conflicts" },
+   { "title": "Military Trail Practice", "note": "sic; Spring 2026" },
+   { "title": "National Security Law II (Leadership in Crisis Simulation)" },
+   { "title": "National Security Practice", "note": "EXPR 997 code offered Spring 2024 ONLY" },
+   { "title": "Negotiation/Mediation" },
+   { "title": "Negotiation and Dispute Resolution Design" },
+   { "title": "Real Estate Negotiation & Drafting" },
+   { "title": "Renewable Energy Law & Energy Justice" },
+   { "title": "Representing the Entrepreneur" },
+   { "title": "Representing the Professional Athlete" },
+   { "title": "Research and Writing for Judicial Clerkships" },
+   { "title": "Researching Administrative Law" },
+   { "title": "Strategic Legal Research" },
+   { "title": "Street Law", "note": "course code EXPR 937 only" },
+   { "title": "The Modern In-House Counsel" },
+   { "title": "Trial Advocacy" },
+   { "title": "Winning Written Advocacy" }
+  ]
+ },
  "doubleCounting": {
   "source": "Dickinson Law Intranet (both pages)",
   "rule": "Unless part of an approved joint degree program, course work may not be double counted to satisfy the J.D. graduation requirements (e.g., one course cannot fulfill both the seminar and experiential requirements). Students may take multiple seminars, using one for the seminar requirement and another for 303(c). Experiential coursework in excess of the 6-credit requirement may be applied toward 303(c)."

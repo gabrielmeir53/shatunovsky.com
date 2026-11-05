@@ -105,6 +105,7 @@ export function topicSuggestions(data) {
   const titles = new Set();
   for (const e of [...lists.seminar.currentLWSEM, ...lists.seminar.formerUniversityParkULWR]) titles.add(e.title);
   for (const e of [...lists.aba303c.universityPark.courses, ...lists.aba303c.courses]) titles.add(e.title);
+  for (const e of lists.experiential.universityParkLWEXP) titles.add(e.title);
   for (const r of chart.rows) if (!catalogTitles.has(r.name.toLowerCase())) titles.add(r.name);
   return [...titles].filter((t) => !/^selected non-law/i.test(t)).sort((a, b) => a.localeCompare(b));
 }

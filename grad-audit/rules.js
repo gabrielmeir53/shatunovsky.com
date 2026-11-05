@@ -15,17 +15,86 @@
  * had to choose, the choice is listed in ASSUMPTIONS at the bottom and referenced by id (A1, A2, …).
  */
 
-/** Where each rule comes from. Referenced by key from the rules below. */
+/**
+ * Where each rule comes from. Referenced by key from the rules below, listed with links on the page
+ * under "How this audit decides", and tabulated in IT-HANDOFF.md §12.
+ *   label  what the document is
+ *   url    where to open it. Intranet links need a Penn State login (Dickinson Law Intranet,
+ *          SharePoint); the others are public.
+ *   note   version/date seen and what was checked
+ */
 export const SOURCES = {
-  checklist: "J.D. Degree Requirements Checklist (University Park students admitted prior to FA2025), Intranet PDF last updated 10/20/2025",
-  flowchart: "Curriculum Flowchart - University Park Pre-2025 (Intranet PDF \"Planning form for University Park Students who entered before Fall 2025\", 9/24/2025; re-read 11/04/2026)",
-  publicPage: "dickinsonlaw.psu.edu > Academics > J.D. Program > Degree Requirements, section \"Penn State Law J.D. Requirements (Prior to Reunification)\" (read 11/04/2026; same seven requirements as the checklist)",
-  seminarPage: "Dickinson Law Intranet, Seminar Courses page (copied October 2026; re-checked against the live page 11/04/2026, no changes)",
-  aba303cUpPage: "Dickinson Law Intranet, \"ABA 303(c) Course Requirement - University Park\" page, for students admitted to Penn State Law, University Park, in Fall 2023 and later (prior to reunification); last updated 9/16/2025 (read 11/04/2026)",
-  aba303cPage: "Dickinson Law Intranet, \"ABA Standard 303(c) - Civil Rights, Equal Protection and Social Justice Courses\" page (unified Dickinson Law list, last updated 3/26/2026; re-read 11/04/2026)",
-  concentrationsPdf: "Concentrations - University Park, students admitted prior to Fall 2025 (Intranet, October 2026)",
-  lionpath: "LionPATH > Degree Planning and Progress > My Academic Requirements, observed 11/04/2026 for a Class of 2027 student. LionPATH Class Search > Class Information shows \"No Class Attributes\" for 303(c) and experiential courses (checked 11/04/2026 on LWELA 963 and LWEXP 975), so LionPATH carries no per-course 303(c) flag the audit could read; the Intranet lists are the only machine-usable source.",
-  bulletin: "Penn State University Bulletin, Law course descriptions (snapshot date in data/catalog.js)",
+  checklist: {
+    label: "J.D. Degree Requirements Checklist, University Park students admitted prior to FA2025 (Intranet PDF)",
+    url: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/JD%20Requirement%20Checklist-UP.pdf?csf=1&web=1",
+    note: "Last updated 10/20/2025. Linked from the Intranet's Registration Information page under \"J.D. Requirements Checklist (University Park)\".",
+  },
+  flowchart: {
+    label: "Curriculum Flowchart - University Park Pre-2025, \"Planning form for University Park Students who entered before Fall 2025\" (Intranet PDF)",
+    url: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Open_To_All/Curriculum%20Flowchart%20-%20University%20Park%20Pre-2025.pdf?csf=1&web=1",
+    note: "9/24/2025; re-read 11/04/2026. Source of the 2.70 GPA bar-skills condition and the good-standing rule. Linked from Office of Academic Affairs as \"University Park Chart - Pre-Fall 2025 Students\".",
+  },
+  publicPage: {
+    label: "Penn State Dickinson Law, Degree Requirements, section \"Penn State Law J.D. Requirements (Prior to Reunification)\" (public web page)",
+    url: "https://dickinsonlaw.psu.edu/academics/jd-program/degree-requirements",
+    note: "Read 11/04/2026; the same seven requirements as the checklist. The Intranet's \"J.D. Requirements\" links (dickinsonlaw.psu.edu/required-courses) resolve here.",
+  },
+  handbook: {
+    label: "Student Academic Handbook (public page) and the University Park Academic Handbook 2024-2025 (Intranet PDF, the handbook in force when the Class of 2027 enrolled)",
+    url: "https://dickinsonlaw.psu.edu/academic-handbook",
+    url2: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/UP_Academic_Handbook_2024-2025_FINAL.pdf?csf=1&web=1",
+    note: "Background for residency, caps and concentrations; no rule in this file is taken from the handbook alone.",
+  },
+  seminarPage: {
+    label: "Dickinson Law Intranet, Seminar Courses page",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Seminars.aspx",
+    note: "Copied October 2026; re-checked against the live page 11/04/2026, no changes. Lists current LWSEM seminars, former Carlisle seminars and former University Park ULWR seminars, plus the double-counting rule.",
+  },
+  aba303cUpPage: {
+    label: "Dickinson Law Intranet, \"ABA 303(c) Course Requirement - University Park\" page (students admitted to Penn State Law, University Park, Fall 2023 and later, prior to reunification)",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/ABA-303(c)-Course-Requirement---University-Park.aspx",
+    note: "Last updated 9/16/2025; read 11/04/2026. The primary 303(c) list for this cohort (A13). Found through the Intranet site search; it is not linked from the Office of Academic Affairs page.",
+  },
+  aba303cPage: {
+    label: "Dickinson Law Intranet, \"ABA Standard 303(c) - Civil Rights, Equal Protection and Social Justice Courses\" page (unified Dickinson Law list)",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Civil-Rights,-Equal-Protection-and-Social-Justice-Courses.aspx",
+    note: "Last updated 3/26/2026; re-read 11/04/2026 (one addition since October: Trauma Informed Lawyering, Spring 2027). A superset of the University Park list.",
+  },
+  experientialPage: {
+    label: "Dickinson Law Intranet, Experiential Learning Courses page",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Experiential-Learning-Skills-Courses.aspx",
+    note: "Last updated 9/16/2025; read 11/04/2026. Gives the Penn State Law (University Park) pre-reunification rule verbatim: 6 credits, C or better or a grade of Credit, from LWCLI clinics, LWEXT internships/semester-in-practice or LWEXP simulation courses; and lists the qualifying courses by campus (data/intranet-lists.js experiential).",
+  },
+  concentrationsPdf: {
+    label: "Concentrations (University Park), students admitted prior to Fall 2025 (Intranet PDF)",
+    url: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/Concentrations%20(University%20Park).pdf?csf=1&web=1",
+    note: "October 2026 copy (file modified 9/22/2026). Linked from Office of Academic Affairs as \"Concentrations\".",
+  },
+  courseChart: {
+    label: "PSDL Course Chart, University Park (FA25-SP27), \"Historical & Anticipated Course Information\" (Intranet PDF)",
+    url: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/PSDL%20Course%20Chart_University%20Park.pdf?csf=1&web=1",
+    note: "Last updated 9/25/2026. Used only by the remaining-semester planner and the crosswalk's \"Offered\" column (data/course-chart.js).",
+  },
+  registrationPage: {
+    label: "Dickinson Law Intranet, Registration Information page (links to the checklist, flowcharts, course chart, Spring 2027 schedule and the 3L registration/advising slides)",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Registration-Information.aspx",
+    note: "The page students are sent to each registration cycle; the 3L slides for Spring 2027 (10/16/2026) are linked from it.",
+  },
+  academicAffairsPage: {
+    label: "Dickinson Law Intranet, Office of Academic Affairs page (links to the handbook, flowcharts, J.D. requirements, the three course lists, concentrations and the Bulletin)",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Office-of-Academic-Affairs.aspx",
+    note: "Hub page; the Associate Deans' Approval Request Form (petitions for unlisted concentration courses) is linked from it.",
+  },
+  lionpath: {
+    label: "LionPATH > Degree Planning and Progress > My Academic Requirements (the degree audit this page corrects), and LionPATH Class Search",
+    url: "https://lionpath.psu.edu/",
+    note: "Audit observed 11/04/2026 for a Class of 2027 student. Class Search > Class Information shows \"No Class Attributes\" for 303(c) and experiential courses (checked 11/04/2026 on LWELA 963 and LWEXP 975), so LionPATH carries no per-course flag the audit could read; the Intranet lists are the only machine-usable source.",
+  },
+  bulletin: {
+    label: "Penn State University Bulletin, Law course descriptions (public)",
+    url: "https://bulletins.psu.edu/university-course-descriptions/law/",
+    note: "Snapshot date in data/catalog.js; regenerated by tools/build-catalog.mjs.",
+  },
 };
 
 /**
@@ -188,11 +257,16 @@ export const REQUIREMENTS = [
     min: 6,
     minGrade: "C",
     exclusive: true,
-    // checklist: "(Externship, Clinic, "EXPR" OR "LWEXP")". Post-merger clinics are LWCLI and
-    // externships LWEXT. Regular electives (LWELA/LWELB) never count, even if experiential in nature.
+    // checklist: "(Externship, Clinic, "EXPR" OR "LWEXP")". The Intranet Experiential Learning
+    // Courses page states the UP pre-reunification rule in full: "6 credits in Experiential Learning
+    // from the upper level curriculum", earned "in an in-house legal clinic (LWCLI), an internship
+    // (LWEXT), a semester-in-practice (LWEXT), or in courses designated as simulation courses
+    // (LWEXP)", "with a grade of at least C, or a grade of Credit in Credit/No Credit courses".
+    // Regular electives (LWELA/LWELB) never count, even if experiential in nature.
     subjects: ["EXPR", "LWEXP", "LWCLI", "LWEXT"],
     catalogTag: "experiential",
-    source: "checklist",
+    crAllowed: true, // the page says a grade of Credit counts, so CR needs no "verify" flag here (A2)
+    source: "experientialPage",
     lionpath: {
       accepts: "(courses not shown; LWEXP courses are not recognized: 0.00 taken)",
       problem:
@@ -325,7 +399,7 @@ export const TITLE_ALIASES = [
  */
 export const ASSUMPTIONS = [
   { id: "A1", text: "A course may count toward more than one concentration. The concentration rules say students may earn multiple concentrations but do not address one course on several lists. The page shows this caveat next to the concentration table.", where: "engine.js scoreConcentrations()" },
-  { id: "A2", text: "A CR (credit) grade meets a \"C or better\" minimum, but every use of a CR course is flagged \"verify with registrar\". CR courses carry credits but no grade points.", where: "engine.js gradeMeets()" },
+  { id: "A2", text: "A CR (credit) grade meets a \"C or better\" minimum. For the experiential requirement the Intranet page says so explicitly (\"a grade of Credit in Credit/No Credit courses\"), so no flag is shown there; everywhere else a CR course is flagged \"verify with registrar\". CR courses carry credits but no grade points.", where: "engine.js gradeMeets(), rules.js experiential.crAllowed" },
   { id: "A3", text: "Courses in a term that has not started yet are \"enrolled\"; courses in the current term without a grade are \"in progress\". Both count as projected, never as done. Term start dates are approximate: Fall = Aug 15, Spring = Jan 5, Summer = May 15.", where: "engine.js courseStatus(), TERM_START" },
   { id: "A4", text: "First-year required courses (PSLFY) never satisfy 303(c), even when the title is on the 303(c) list (e.g., Criminal Procedure). The list itself says the course must be beyond the first-year required courses.", where: "rules.js REQUIREMENTS aba303c.excludeFirstYear" },
   { id: "A5", text: "Seminar, 303(c) and experiential are assigned to courses together so that no course is used twice, choosing the assignment that satisfies the most requirements, then the one that uses completed courses before in-progress ones. Experiential credit beyond 6 may also be used for 303(c), per the Intranet rule.", where: "engine.js assignExclusive()" },

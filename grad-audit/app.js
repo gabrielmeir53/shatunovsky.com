@@ -16,13 +16,13 @@
 // query string here so visitors load the new version at once. Not needed on a host without that
 // cache. Modules that import each other (engine.js → match.js) are unversioned inside; bump the
 // importer here when a dependency changes. See IT-HANDOFF.md §3 "Caching".
-import * as rules from "./rules.js?v=2";
+import * as rules from "./rules.js?v=3";
 import catalog from "./data/catalog.js";
-import lists from "./data/intranet-lists.js?v=2";
+import lists from "./data/intranet-lists.js?v=3";
 import concentrations from "./data/concentrations.js";
 import chart from "./data/course-chart.js";
 import { parsePdfPages, parseAnyText, extractPdfPages } from "./parser.js?v=3";
-import { runAudit, describeCatalog, statusWord } from "./engine.js?v=2";
+import { runAudit, describeCatalog, statusWord } from "./engine.js?v=3";
 import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "./sample.js?v=3";
 import { gradeChoices, termList, firstYearPicks, pickableCourses, topicSuggestions, buildManualCourses } from "./manual.js?v=1";
 
@@ -323,7 +323,13 @@ function renderCatalog() {
 }
 
 function renderHow() {
-  $("sources").replaceChildren(...Object.values(rules.SOURCES).map((s) => h("li", {}, s)),
+  // Every source as a link (Intranet links need a Penn State login), with what was checked and when.
+  $("sources").replaceChildren(...Object.values(rules.SOURCES).map((s) =>
+    h("li", {},
+      h("a", { href: s.url, rel: "noopener" }, s.label),
+      s.url2 ? [" (", h("a", { href: s.url2, rel: "noopener" }, "Intranet PDF"), ")"] : null,
+      s.url.includes("sharepoint.com") || s.url2 ? h("span", { class: "ga-muted small" }, " · Penn State login") : null,
+      h("div", { class: "ga-muted small" }, s.note))),
     h("li", {}, `Course catalog snapshot: ${catalog.snapshot}`));
   $("assumptions").replaceChildren(...rules.ASSUMPTIONS.map((a) =>
     h("li", {}, h("strong", {}, `${a.id}. `), a.text, " ", h("span", { class: "where" }, `(${a.where})`))));

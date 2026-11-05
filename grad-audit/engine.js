@@ -332,7 +332,7 @@ function evaluate(r, ctx) {
   // Anything the student should double-check: CR grades (A2) and self-reported "C or better" grades
   // from the course picker (A12). The page prints these next to the status pill.
   const verifyCR = (cs) => [
-    ...cs.filter((c) => c.grade === "CR").map((c) => `${c.code} has a CR grade (A2)`),
+    ...(r.crAllowed ? [] : cs.filter((c) => c.grade === "CR").map((c) => `${c.code} has a CR grade (A2)`)),
     ...cs.filter((c) => c.grade === "P").map((c) => `${c.code} grade is self-reported, not from a transcript (A12)`),
   ];
   const g = (n) => n.toFixed(2);

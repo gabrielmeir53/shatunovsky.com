@@ -66,6 +66,8 @@ for (const c of concentrations.concentrations) for (const e of [...c.courses, ..
 for (const e of lists.seminar.currentLWSEM) note("seminar list (current LWSEM)", e.title);
 for (const e of lists.aba303c.courses) note("303(c) list (unified)", e.title);
 for (const e of lists.aba303c.universityPark.courses) note("303(c) list (University Park)", e.title);
+for (const e of [...lists.experiential.clinics, ...lists.experiential.universityParkLWEXP]) note("experiential list (University Park)", e.title);
+for (const [k, s] of Object.entries(rules.SOURCES)) if (!s.label || !s.url || !s.note) errors.push(`SOURCES.${k} needs label, url and note`);
 for (const r of chart.rows) if (r.prefix !== "LWLLM") note(`course chart (${r.prefix})`, r.name);
 
 console.log(`Catalog: ${catalog.courses.length} courses, snapshot ${catalog.snapshot}`);

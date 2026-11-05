@@ -150,6 +150,25 @@ test("title normalization reconciles source spellings", () => {
   assert.equal(parseQualifiers("Criminal Procedure (LLMs Only)").llmOnly, true);
 });
 
+test("every source has a label, a link and a note; every requirement cites a source", () => {
+  for (const [k, s] of Object.entries(rules.SOURCES)) {
+    assert.ok(s.label && /^https:\/\//.test(s.url) && s.note, `SOURCES.${k}`);
+  }
+  for (const r of rules.REQUIREMENTS) assert.ok(rules.SOURCES[r.source], `${r.id} cites unknown source ${r.source}`);
+});
+
+test("experiential: a CR grade counts without a verify flag (Intranet page says Credit counts, A2)", () => {
+  const p = sample();
+  const courses = p.courses.map((c) => (c.code === "LWEXP 957" ? { ...c, grade: "CR" } : c));
+  const r = runAudit(courses, DATA, { asOf: AS_OF });
+  const exp = req(r, "experiential");
+  assert.ok(exp.courses.some((c) => c.code === "LWEXP 957"));
+  assert.equal(exp.verify.length, 0);
+  // but the same CR grade on the Professional Responsibility course is still flagged
+  const r2 = runAudit(p.courses.map((c) => (c.code === "LWREQ 934" ? { ...c, grade: "CR" } : c)), DATA, { asOf: AS_OF });
+  assert.ok(req(r2, "pr").verify.some((v) => /CR grade/.test(v)));
+});
+
 test("every title alias points at a real catalog course", () => {
   const keys = new Set(catalog.courses.map((c) => normalizeTitle(c.title)));
   for (const a of rules.TITLE_ALIASES.filter((a) => !a.specialTopic)) {

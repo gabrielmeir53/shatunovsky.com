@@ -143,6 +143,7 @@
 .ga-warn { color: var(--open); font-size: .9rem; }
 .ga-tag { display: inline-block; font-family: var(--font-sans); font-size: .72rem; border: 1px solid var(--border); border-radius: 4px; padding: 0 .35rem; margin: 0 .25rem .2rem 0; white-space: nowrap; color: var(--text-dim); background: #fafaf7; }
 .ga-tag.is-req { border-color: var(--info); color: var(--info); background: var(--info-bg); }
+.ga-sources li { margin-bottom: .6rem; font-size: .93rem; }
 .ga-assumptions li { margin-bottom: .45rem; font-size: .93rem; }
 .ga-assumptions .where { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .78rem; color: var(--text-muted); }
 .ga-disclaimer { font-size: .88rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: .8rem; margin-top: 1.2rem !important; }
