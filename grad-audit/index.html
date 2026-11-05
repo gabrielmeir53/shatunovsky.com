@@ -34,7 +34,7 @@
     <header class="ga-hero">
       <p class="ga-kicker">Penn State Law &middot; University Park &middot; admitted before reunification</p>
       <h1>Class of 2027 Graduation Audit</h1>
-      <p class="ga-sub">For J.D. students admitted to Penn State Law, University Park, before Fall 2025 (the Class of 2027). Load your LionPATH PDF or pick your courses by hand, and the page checks them against the pre-reunification graduation rules using the post-merger course codes that LionPATH&rsquo;s degree audit doesn&rsquo;t recognize. It also shows concentration progress and what next semester could close.</p>
+      <p class="ga-sub">For J.D. students admitted to Penn State Law, University Park, before Fall 2025 (the Class of 2027). Pick your courses semester by semester, or load your LionPATH PDF, and the page checks them against the pre-reunification graduation rules using the post-merger course codes that LionPATH&rsquo;s degree audit doesn&rsquo;t recognize. It also shows concentration progress and what next semester could close.</p>
     </header>
 
     <section class="ga-disclaimer-top" role="note" aria-labelledby="disclaimer-h">
@@ -50,35 +50,11 @@
     <section class="ga-input" aria-labelledby="input-h">
       <h2 id="input-h">Start with your record</h2>
       <div class="ga-modes" role="tablist" aria-label="How to enter your courses">
-        <button type="button" class="ga-mode is-active" id="mode-pdf" role="tab" aria-selected="true" aria-controls="panel-pdf">Upload a LionPATH PDF</button>
-        <button type="button" class="ga-mode" id="mode-manual" role="tab" aria-selected="false" aria-controls="panel-manual">Pick your courses</button>
+        <button type="button" class="ga-mode is-active" id="mode-manual" role="tab" aria-selected="true" aria-controls="panel-manual">Pick your courses</button>
+        <button type="button" class="ga-mode" id="mode-pdf" role="tab" aria-selected="false" aria-controls="panel-pdf">Upload a LionPATH PDF</button>
       </div>
 
-      <div id="panel-pdf" role="tabpanel" aria-labelledby="mode-pdf">
-        <p>Either LionPATH document works:</p>
-        <ul>
-          <li><strong>Advising transcript:</strong> Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript, then save it as a PDF.</li>
-          <li><strong>Requirements report:</strong> Student Home Base &rsaquo; Degree Planning and Progress &rsaquo; My Academic Requirements &rsaquo; View Report as PDF.</li>
-        </ul>
-        <label class="ga-drop" id="drop">
-          <input type="file" id="file" accept="application/pdf,.pdf">
-          <span class="ga-drop-main">Choose the PDF or drop it here</span>
-          <span class="ga-drop-sub">PDF only &middot; read locally</span>
-        </label>
-        <div class="ga-actions">
-          <button type="button" id="try-sample" class="ga-btn ga-btn-secondary">Try a sample transcript</button>
-          <button type="button" id="try-sample-report" class="ga-btn ga-btn-secondary">Try a sample requirements report</button>
-          <span class="ga-link">Sample PDFs (made-up student): <a href="sample-transcript.pdf" download>transcript</a> &middot; <a href="sample-requirements-report.pdf" download>requirements report</a></span>
-        </div>
-        <details class="ga-paste">
-          <summary>PDF won&rsquo;t read? Paste the text instead</summary>
-          <label for="paste" class="ga-visually-hidden">Transcript text</label>
-          <textarea id="paste" rows="8" placeholder="Open the PDF, select all, copy, and paste here."></textarea>
-          <button type="button" id="use-paste" class="ga-btn ga-btn-secondary">Audit pasted text</button>
-        </details>
-      </div>
-
-      <div id="panel-manual" role="tabpanel" aria-labelledby="mode-manual" hidden>
+      <div id="panel-manual" role="tabpanel" aria-labelledby="mode-manual">
         <p>Rebuild your record by hand, semester by semester. The checklist runs from 1L Fall to your final Spring: the ten first-year courses are filled in for you, and under each later term you type a code or title (e.g. <em>LWREQ 934</em>, <em>Evidence</em>, <em>Immigration</em>) and click the course to add it, then set its credits and grade. &ldquo;C or better&rdquo; without the letter grade is enough for every requirement except the two GPA checks; letter grades, including 1L grades, can be entered on each row.</p>
         <div class="ga-field-row">
           <label for="start-year">I entered Penn State Law in</label>
@@ -109,6 +85,30 @@
           <button type="button" id="manual-sample" class="ga-btn ga-btn-secondary">Fill in the sample student</button>
           <button type="button" id="manual-clear" class="ga-btn ga-btn-secondary">Clear</button>
         </div>
+      </div>
+
+      <div id="panel-pdf" role="tabpanel" aria-labelledby="mode-pdf" hidden>
+        <p>Either LionPATH document works:</p>
+        <ul>
+          <li><strong>Advising transcript:</strong> Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript, then save it as a PDF.</li>
+          <li><strong>Requirements report:</strong> Student Home Base &rsaquo; Degree Planning and Progress &rsaquo; My Academic Requirements &rsaquo; View Report as PDF.</li>
+        </ul>
+        <label class="ga-drop" id="drop">
+          <input type="file" id="file" accept="application/pdf,.pdf">
+          <span class="ga-drop-main">Choose the PDF or drop it here</span>
+          <span class="ga-drop-sub">PDF only &middot; read locally</span>
+        </label>
+        <div class="ga-actions">
+          <button type="button" id="try-sample" class="ga-btn ga-btn-secondary">Try a sample transcript</button>
+          <button type="button" id="try-sample-report" class="ga-btn ga-btn-secondary">Try a sample requirements report</button>
+          <span class="ga-link">Sample PDFs (made-up student): <a href="sample-transcript.pdf" download>transcript</a> &middot; <a href="sample-requirements-report.pdf" download>requirements report</a></span>
+        </div>
+        <details class="ga-paste">
+          <summary>PDF won&rsquo;t read? Paste the text instead</summary>
+          <label for="paste" class="ga-visually-hidden">Transcript text</label>
+          <textarea id="paste" rows="8" placeholder="Open the PDF, select all, copy, and paste here."></textarea>
+          <button type="button" id="use-paste" class="ga-btn ga-btn-secondary">Audit pasted text</button>
+        </details>
       </div>
 
       <label class="ga-check">
