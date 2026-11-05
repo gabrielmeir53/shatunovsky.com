@@ -80,8 +80,9 @@ export function firstYearPicks(startYear, rules, grades = {}) {
  * @param {object} data  { rules, catalog }
  */
 export function pickableCourses(data) {
-  const { rules, catalog } = data;
-  return catalog.courses.map((c) => ({
+  const { rules, catalog, legacy } = data;
+  const current = new Set(catalog.courses.map((c) => c.code));
+  const row = (c, isLegacy) => ({
     code: c.code,
     subject: c.subject,
     title: c.title,
@@ -89,8 +90,15 @@ export function pickableCourses(data) {
     defaultCredits: c.minCredits,
     variableCredits: c.minCredits !== c.maxCredits,
     specialTopics: rules.SPECIAL_TOPICS_TITLE.test(c.title),
+    legacy: isLegacy, // pre-reunification code from the 2024-25 Bulletin archive
     search: `${c.code} ${c.title}`.toLowerCase(),
-  }));
+  });
+  return [
+    ...catalog.courses.map((c) => row(c, false)),
+    // Legacy codes come after the current ones in search results; first-year PSLFY courses are
+    // excluded because the picker adds them as a block (firstYearPicks).
+    ...(legacy?.courses ?? []).filter((c) => !current.has(c.code) && !rules.FIRST_YEAR_SUBJECTS.includes(c.subject)).map((c) => row(c, true)),
+  ];
 }
 
 /**
