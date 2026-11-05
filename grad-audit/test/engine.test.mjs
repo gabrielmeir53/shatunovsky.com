@@ -19,6 +19,7 @@ import legacy from "../data/legacy-catalog.js";
 import lists from "../data/intranet-lists.js";
 import concentrations from "../data/concentrations.js";
 import chart from "../data/course-chart.js";
+import offeringsSpring2027 from "../data/offerings-spring-2027.js";
 import { parseTranscriptText, parsePdfPages, parseAnyText, parseReportLines, itemsToLines, detectFormat } from "../parser.js";
 import { runAudit, assignExclusive, gradeMeets, courseStatus, describeCatalog } from "../engine.js";
 import { normalizeTitle, titleKey, parseQualifiers } from "../match.js";
@@ -26,7 +27,7 @@ import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "../sampl
 import * as manual from "../manual.js";
 import { parseSubjectPage, parseSubjectIndex } from "../tools/build-catalog.mjs";
 
-const DATA = { rules, catalog, legacy, lists, concentrations, chart };
+const DATA = { rules, catalog, legacy, lists, concentrations, chart, offerings: [offeringsSpring2027] };
 const AS_OF = new Date(2026, 10, 4); // Nov 4, 2026: Fall 2026 in progress, Spring 2027 enrolled
 const sample = () => parseTranscriptText(sampleTranscriptLines().join("\n"));
 const auditSample = (opts = {}) => runAudit(sample().courses, DATA, { asOf: AS_OF, ...opts });
@@ -410,6 +411,73 @@ test("GPA: within 0.05 of a threshold gives no verdict and points to the officia
   const gs = runAudit(onLine, DATA, { asOf: AS_OF });
   assert.equal(req(gs, "goodStanding").status, "confirm");
   assert.ok(req(gs, "goodStanding").verify.some((v) => /official GPA/.test(v)));
+});
+
+// ---------------------------------------------------------------- planner: verified Spring 2027 sections
+test("planner: Spring 2027 options come from the LionPATH section list with real codes and sections", () => {
+  // Sample student minus the 303(c) courses and the enrolled Spring 2027 rows: 303(c) is open.
+  const courses = sample().courses.filter((c) => !["LWELA 964", "LWELB 954"].includes(c.code) && c.term !== "Spring 2027");
+  const r = runAudit(courses, DATA, { asOf: AS_OF });
+  assert.equal(req(r, "aba303c").status, "open");
+  const p = r.planner;
+  assert.equal(p.source, "lionpath");
+  assert.deepEqual(p.terms, ["Spring 2027"]);
+  assert.equal(p.readOn, "2026-11-04");
+  const codes = p.suggestions.map((s) => `${s.code}-${s.section}`);
+  assert.ok(codes.includes("LWELA 964-201"), "Employment Discrimination (UP list)");
+  assert.ok(codes.includes("LWELA 963-201"), "Con Law II (UP list)");
+  assert.ok(codes.includes("LWEXP 997-205"), "Trauma Informed Lawyering (DL list, experiential excess)");
+  const ed = p.suggestions.find((s) => s.code === "LWELA 964");
+  assert.ok(ed.reasons.includes("ABA 303(c) – UP list"));
+  assert.equal(ed.credits, 3);
+  assert.match(ed.meets, /T Th 11:15/);
+  const ti = p.suggestions.find((s) => s.code === "LWEXP 997" && s.section === "205");
+  assert.ok(ti.reasons.includes("ABA 303(c) – DL list only"));
+  assert.equal(ti.status, "Waitlist");
+  // Already-taken numbered courses never reappear (Evidence is on the sample record, Spring 2026)
+  assert.ok(!codes.includes("LWELA 955-201"));
+  // Hidden by default: the 7 clinic/externship/independent-study lines (enrollment opened 10/26/2026)
+  assert.equal(p.hiddenApplicationOnly, 7);
+});
+
+test("planner: clinics are hidden once enrollment opened, and shown with includeApplicationOnly", () => {
+  // Experiential open: drop every LWEXP/LWCLI row from the sample.
+  const courses = sample().courses.filter((c) => !/^(LWEXP|LWCLI)/.test(c.code) && c.term !== "Spring 2027");
+  const r = runAudit(courses, DATA, { asOf: AS_OF });
+  assert.equal(req(r, "experiential").status, "open");
+  const hidden = r.planner;
+  assert.ok(hidden.hiddenApplicationOnly >= 5, `hidden ${hidden.hiddenApplicationOnly}`);
+  assert.ok(!hidden.suggestions.some((s) => s.application), "no clinic/externship rows by default");
+  assert.ok(hidden.suggestions.some((s) => s.code === "LWEXP 975"), "Litigation Skills is a self-enrolled experiential option");
+  const shown = runAudit(courses, DATA, { asOf: AS_OF, includeApplicationOnly: true }).planner;
+  assert.equal(shown.hiddenApplicationOnly, 0);
+  const cl = shown.suggestions.find((s) => s.code === "LWCLI 905");
+  assert.ok(cl && cl.application && cl.applicationClosed);
+  assert.ok(cl.reasons.includes("Experiential"));
+  // Before enrollment opened (Oct 1, 2026) clinics are not hidden
+  const early = runAudit(courses, DATA, { asOf: new Date(2026, 9, 1) }).planner;
+  assert.equal(early.hiddenApplicationOnly, 0);
+  assert.ok(early.suggestions.some((s) => s.code === "LWCLI 905"));
+});
+
+test("planner: falls back to the course chart when no verified list covers the term", () => {
+  const noOfferings = { ...DATA, offerings: [] };
+  const r = runAudit(sample().courses.filter((c) => c.term !== "Spring 2027"), noOfferings, { asOf: AS_OF });
+  assert.equal(r.planner.source, "chart");
+  assert.ok(r.planner.suggestions.length > 0);
+});
+
+test("offerings data: every section has a code, section, class number and a credit value or a reason", () => {
+  for (const s of offeringsSpring2027.sections) {
+    assert.match(s.code, /^LW[A-Z]{3} \d{3}$/, s.code);
+    assert.match(s.section, /^\d{3}(-\d{3})?$/, `${s.code} section`);
+    assert.match(s.classNbr, /^\d{5}$/, `${s.code} class number`);
+    assert.ok(s.credits != null || s.creditsSource, `${s.code}-${s.section} credits`);
+    assert.equal(s.application, ["LWCLI", "LWEXT", "LWINP"].includes(s.code.split(" ")[0]));
+  }
+  assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWELA 997").length, 5);
+  assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWEXP 997").length, 6);
+  assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWSEM 997").length, 3);
 });
 
 // ---------------------------------------------------------------- legacy (pre-reunification) codes

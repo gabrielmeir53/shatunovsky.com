@@ -75,6 +75,21 @@ export const SOURCES = {
     url: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/PSDL%20Course%20Chart_University%20Park.pdf?csf=1&web=1",
     note: "Last updated 9/25/2026. Used only by the remaining-semester planner and the crosswalk's \"Offered\" column (data/course-chart.js).",
   },
+  courseUpdatesPage: {
+    label: "Dickinson Law Intranet, Spring 2027 Course Updates page (courses added/changed after the schedule release, special enrollment criteria, Zoom and point-to-point lists, Special Topics descriptions)",
+    url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Spring%202024%20Course%20Updates.aspx",
+    note: "Last updated 10/28/2026; read 11/04/2026. Source of the Spring 2027 section notes in data/offerings-spring-2027.js and of the rule that clinics, externships and independent studies are enrolled by the Registrar after an application.",
+  },
+  weeklySchedule: {
+    label: "Spring 2027 Weekly Class Schedule (ofcourse scheduler export linked from the Registration Information page; credits per class block)",
+    url: "https://psulaw.ofcoursescheduler.com/con/exportDay.php?pac=365176",
+    note: "Read 11/04/2026; used to cross-check the LionPATH section list and credits in data/offerings-spring-2027.js.",
+  },
+  slides3L: {
+    label: "Spring 2027 Registration Information + Advising Session slides for 3L students (10/16/2026, Intranet PDF)",
+    url: "https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/SP27-3L%20Registration-Information-Slides-FINAL%20(10.16.26).pdf?csf=1&web=1",
+    note: "Registration timeline (shopping carts 10/19, 3L enrollment 10/26, 2L 10/28, classes 1/11/2027, last add 1/17/2027), degree-requirement recap per cohort, co-curricular caps. No clinic application deadline is stated.",
+  },
   registrationPage: {
     label: "Dickinson Law Intranet, Registration Information page (links to the checklist, flowcharts, course chart, Spring 2027 schedule and the 3L registration/advising slides)",
     url: "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Registration-Information.aspx",

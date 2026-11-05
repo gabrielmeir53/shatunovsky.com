@@ -20,6 +20,7 @@ import legacy from "../data/legacy-catalog.js";
 import lists from "../data/intranet-lists.js";
 import concentrations from "../data/concentrations.js";
 import chart from "../data/course-chart.js";
+import offeringsSpring2027 from "../data/offerings-spring-2027.js";
 import { normalizeTitle, entryKeys, parseQualifiers } from "../match.js";
 
 const aliases = Object.fromEntries(rules.TITLE_ALIASES.map((a) => [normalizeTitle(a.from), normalizeTitle(a.to)]));
@@ -79,6 +80,16 @@ for (const e of lists.aba303c.courses) note("303(c) list (unified)", e.title);
 for (const e of lists.aba303c.universityPark.courses) note("303(c) list (University Park)", e.title);
 for (const e of [...lists.experiential.clinics, ...lists.experiential.universityParkLWEXP]) note("experiential list (University Park)", e.title);
 for (const [k, s] of Object.entries(rules.SOURCES)) if (!s.label || !s.url || !s.note) errors.push(`SOURCES.${k} needs label, url and note`);
+// Verified section lists: every numbered course must be in a catalog; 997 sections need a topic; credits agree with the Bulletin when fixed.
+for (const o of [offeringsSpring2027]) {
+  const anyCode = new Set([...catalog.courses, ...legacy.courses].map((c) => c.code));
+  for (const s of o.sections) {
+    if (!anyCode.has(s.code)) errors.push(`${o.term} offerings: ${s.code} is in neither catalog`);
+    const cat = catalog.courses.find((c) => c.code === s.code);
+    if (cat && /^special topics?$/i.test(cat.title) && !s.topic) errors.push(`${o.term} offerings: ${s.code}-${s.section} needs a topic`);
+    if (cat && s.credits != null && cat.minCredits === cat.maxCredits && s.credits !== cat.minCredits && !/LionPATH|schedule/.test(s.creditsSource ?? "")) errors.push(`${o.term} offerings: ${s.code}-${s.section} credits ${s.credits} vs Bulletin ${cat.credits}`);
+  }
+}
 for (const r of chart.rows) if (r.prefix !== "LWLLM") note(`course chart (${r.prefix})`, r.name);
 
 console.log(`Catalog: ${catalog.courses.length} courses, snapshot ${catalog.snapshot}; legacy (2024-25 Penn State Law archive): ${legacy.courses.length} courses in ${Object.keys(legacy.subjects).length} subjects`);
