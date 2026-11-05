@@ -212,8 +212,9 @@ function compare(a, b) {
 /**
  * Run the full audit.
  * @param {import("./parser.js").Course[]} rawCourses
- * @param {object} data   { rules, catalog, lists, concentrations, chart }  (the imported modules)
- * @param {object} [opts] { asOf: Date, profDevConfirmed: boolean }
+ * @param {object} data   { rules, catalog, legacy, lists, concentrations, chart, offerings }  (the imported modules;
+ *                        offerings = array of data/offerings-*.js, one per term with a verified LionPATH section list)
+ * @param {object} [opts] { asOf: Date, profDevConfirmed: boolean, includeApplicationOnly: boolean }
  * @returns {AuditResult}
  */
 export function runAudit(rawCourses, data, opts = {}) {
@@ -312,7 +313,7 @@ export function runAudit(rawCourses, data, opts = {}) {
     caps,
     concentrations: conc,
     courses,
-    planner: planNext(courses, results, conc, concentrations, chart, catalogByCode, aliases, lists, asOf),
+    planner: planNext(courses, results, conc, concentrations, chart, data.offerings, catalogByCode, aliases, lists, asOf, { includeApplicationOnly: Boolean(opts.includeApplicationOnly) }),
   };
 }
 
@@ -515,17 +516,73 @@ export function scoreConcentrations(courses, concData, aliases, gradeOrder) {
  * requirement or (b) count toward a concentration that is close (within 6 credits).
  * Suggestions only; the chart says offerings are subject to change.
  */
-function planNext(courses, results, conc, concData, chart, catalogByCode, aliases, lists, asOf) {
+function planNext(courses, results, conc, concData, chart, offerings, catalogByCode, aliases, lists, asOf, opts = {}) {
   const CHART_TERMS = { FA25: "Fall 2025", SP26: "Spring 2026", FA26: "Fall 2026", SP27: "Spring 2027" };
   // Only terms that have not started yet: the current term's registration is already settled.
   const futureTerms = Object.entries(CHART_TERMS).filter(([, t]) => termStartDate(t) > asOf);
   const taken = new Set(courses.flatMap((c) => [...c.titleKeys]));
+  const takenCodes = new Set(courses.filter((c) => c.status !== "withdrawn").map((c) => c.code));
   const titleToCatalog = new Map([...catalogByCode.values()].map((c) => [titleKey(c.title, aliases), c]));
   const openReqs = results.filter((r) => r.status === "open").map((r) => r.requirement.id);
   const nearConc = conc.filter((c) => c.band !== "complete" && c.band !== "projected" && c.needed <= 6);
   const listsByName = new Map(concData.concentrations.map((c) => [c.name, [...c.courses, ...c.clinics]]));
   const nearIndexes = nearConc.map((c) => ({ c, idx: indexEntries(listsByName.get(c.name), aliases) }));
 
+  /** Why a course would help: open exclusive requirements, the bar-skills condition, close concentrations. */
+  const reasonsFor = (prefix, code, keys) => {
+    const reasons = [];
+    if (openReqs.includes("seminar") && (prefix === "LWSEM" || keys.some((k) => lists.seminar.has(k)))) reasons.push("Writing seminar");
+    if (openReqs.includes("aba303c")) {
+      // A13: say which list the course is on, the same way the requirement table does.
+      if (keys.some((k) => lists.aba303cUP.has(k))) reasons.push("ABA 303(c) – UP list");
+      else if (keys.some((k) => lists.aba303c.has(k))) reasons.push("ABA 303(c) – DL list only");
+    }
+    if (openReqs.includes("experiential") && ["LWEXP", "LWCLI", "LWEXT"].includes(prefix)) reasons.push("Experiential");
+    if (openReqs.includes("gpaBarSkills") && ["LWELB 900", "BAREX 900"].includes(code)) reasons.push("Bar-skills condition (GPA ≤ 2.70)");
+    for (const { c, idx } of nearIndexes) if (keys.some((k) => idx.has(k))) reasons.push(`${c.name} (needs ${c.needed})`);
+    return reasons;
+  };
+
+  // 1. A term with a verified section list (data/offerings-*.js) uses it: real LionPATH codes,
+  //    sections, credits and meeting times. Clinics, externships and independent study are
+  //    application-only; once enrollment for the term has opened their window is treated as closed
+  //    and they are hidden unless opts.includeApplicationOnly is set (the page's checkbox).
+  const verified = (offerings ?? []).filter((o) => futureTerms.some(([, t]) => t === o.term));
+  if (verified.length) {
+    const suggestions = [];
+    let hiddenApplicationOnly = 0;
+    for (const o of verified) {
+      const closed = o.applicationOnly?.treatClosedFrom ? asOf >= new Date(o.applicationOnly.treatClosedFrom + "T00:00:00") : false;
+      for (const s of o.sections) {
+        if (takenCodes.has(s.code) && !s.topic) continue; // already on the record (numbered course)
+        const cat = catalogByCode.get(s.code);
+        const generic = !cat || /^special topics?$/i.test(cat.title);
+        const keys = new Set();
+        if (cat && !generic) keys.add(titleKey(cat.title, aliases));
+        if (s.topic) for (const k of entryKeys(s.topic, aliases)) keys.add(k);
+        if (generic && !s.topic) for (const k of entryKeys(s.title, aliases)) keys.add(k);
+        keys.delete("");
+        if ([...keys].some((k) => taken.has(k))) continue;
+        const reasons = reasonsFor(s.code.split(" ")[0], s.code, [...keys]);
+        if (!reasons.length) continue;
+        if (s.application && closed && !opts.includeApplicationOnly) { hiddenApplicationOnly++; continue; }
+        suggestions.push({
+          term: o.term, verified: true,
+          code: s.code, section: s.section, classNbr: s.classNbr, name: s.title, credits: s.credits ?? "?", creditsSource: s.creditsSource,
+          meets: s.meets, mode: s.mode, status: s.status, seats: s.seats, application: s.application, applicationClosed: closed, note: s.note,
+          prefix: s.code.split(" ")[0], clinic: s.code.startsWith("LWCLI"), reasons,
+        });
+      }
+    }
+    const o = verified[0];
+    return {
+      terms: verified.map((x) => x.term),
+      source: "lionpath", readOn: o.readOn, dates: o.dates, applicationOnly: o.applicationOnly, hiddenApplicationOnly,
+      suggestions: suggestions.sort((a, b) => b.reasons.length - a.reasons.length || a.code.localeCompare(b.code) || a.section.localeCompare(b.section)),
+    };
+  }
+
+  // 2. Otherwise the course chart's anticipated offerings (names only; credits from the catalog).
   const suggestions = [];
   for (const row of chart.rows) {
     const terms = row.terms.filter((t) => futureTerms.some(([code]) => code === t)).map((t) => CHART_TERMS[t]);
@@ -533,18 +590,10 @@ function planNext(courses, results, conc, concData, chart, catalogByCode, aliase
     const keys = entryKeys(row.name, aliases);
     if (keys.some((k) => taken.has(k))) continue;
     const cat = keys.map((k) => titleToCatalog.get(k)).find(Boolean);
-    const reasons = [];
-    if (openReqs.includes("seminar") && (row.prefix === "LWSEM" || keys.some((k) => lists.seminar.has(k)))) reasons.push("Writing seminar");
-    if (openReqs.includes("aba303c")) {
-      // A13: say which list the course is on, the same way the requirement table does.
-      if (keys.some((k) => lists.aba303cUP.has(k))) reasons.push("ABA 303(c) – UP list");
-      else if (keys.some((k) => lists.aba303c.has(k))) reasons.push("ABA 303(c) – DL list only");
-    }
-    if (openReqs.includes("experiential") && ["LWEXP", "LWCLI", "LWEXT"].includes(row.prefix)) reasons.push("Experiential");
-    for (const { c, idx } of nearIndexes) if (keys.some((k) => idx.has(k))) reasons.push(`${c.name} (needs ${c.needed})`);
-    if (reasons.length) suggestions.push({ prefix: row.prefix, name: row.name, terms, credits: cat?.credits ?? "?", code: cat?.code ?? null, clinic: row.prefix === "LWCLI", temporary: row.temporary, reasons });
+    const reasons = reasonsFor(row.prefix, cat?.code ?? null, keys);
+    if (reasons.length) suggestions.push({ prefix: row.prefix, name: row.name, terms, credits: cat?.credits ?? "?", code: cat?.code ?? null, clinic: row.prefix === "LWCLI", temporary: row.temporary, reasons, verified: false });
   }
-  return { terms: futureTerms.map(([, t]) => t), suggestions: suggestions.sort((a, b) => b.reasons.length - a.reasons.length || a.name.localeCompare(b.name)) };
+  return { terms: futureTerms.map(([, t]) => t), source: "chart", suggestions: suggestions.sort((a, b) => b.reasons.length - a.reasons.length || a.name.localeCompare(b.name)) };
 }
 
 /**

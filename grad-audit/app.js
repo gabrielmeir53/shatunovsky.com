@@ -22,12 +22,14 @@ import legacy from "./data/legacy-catalog.js";
 import lists from "./data/intranet-lists.js?v=3";
 import concentrations from "./data/concentrations.js";
 import chart from "./data/course-chart.js";
+import offeringsSpring2027 from "./data/offerings-spring-2027.js";
 import { parsePdfPages, parseAnyText, extractPdfPages } from "./parser.js?v=3";
-import { runAudit, describeCatalog, statusWord } from "./engine.js?v=4";
+import { runAudit, describeCatalog, statusWord } from "./engine.js?v=5";
 import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "./sample.js?v=3";
 import { gradeChoices, termList, firstYearPicks, pickableCourses, topicSuggestions, buildManualCourses } from "./manual.js?v=2";
 
-const DATA = { rules, catalog, legacy, lists, concentrations, chart };
+// offerings: one verified LionPATH section list per term; add the next term's file here.
+const DATA = { rules, catalog, legacy, lists, concentrations, chart, offerings: [offeringsSpring2027] };
 
 // ---------------------------------------------------------------------------------------------
 // Tiny DOM helper. Children that are strings become TEXT nodes, never HTML.
@@ -115,7 +117,7 @@ function audit(parsed, label) {
 }
 
 function render(parsed) {
-  const result = runAudit(parsed.courses, DATA, { asOf: new Date(), profDevConfirmed: $("profdev").checked });
+  const result = runAudit(parsed.courses, DATA, { asOf: new Date(), profDevConfirmed: $("profdev").checked, includeApplicationOnly: plannerOpts.includeApplicationOnly });
   const root = $("results");
   root.replaceChildren(
     renderBanner(result, parsed.format),
@@ -250,10 +252,51 @@ function renderConcentrations(r) {
     h("p", { class: "ga-muted small" }, `${r.concentrations.length - shown.length} other concentrations have none of your courses yet. Externships, moot court and other "additional opportunities" can count only with Associate Dean approval and are not counted here.`));
 }
 
+/** Planner options the student can change on the page (re-runs the audit). */
+const plannerOpts = { includeApplicationOnly: false };
+
 function renderPlanner(r) {
   const p = r.planner;
-  if (!p.terms.length) return section("Remaining semesters", h("p", {}, "The course chart doesn't list any semester after the current one."));
-  if (!p.suggestions.length) return section(`Options for ${p.terms.join(", ")}`, h("p", {}, "Nothing on the course chart would close an open requirement or a concentration within 6 credits."));
+  if (!p.terms.length) return section("Remaining semesters", h("p", {}, "No semester after the current one is on the course chart or in a verified section list."));
+  const title = `Options for ${p.terms.join(", ")}`;
+
+  // Verified section list (data/offerings-*.js): real LionPATH codes, sections, credits, times.
+  if (p.source === "lionpath") {
+    const ao = p.applicationOnly ?? {};
+    const closed = ao.treatClosedFrom && new Date() >= new Date(ao.treatClosedFrom + "T00:00:00");
+    const toggle = h("label", { class: "ga-check" },
+      h("input", { type: "checkbox", id: "include-apps", checked: plannerOpts.includeApplicationOnly ? true : null,
+        onchange: (ev) => { plannerOpts.includeApplicationOnly = ev.target.checked; if (lastCourses) render(lastCourses); } }),
+      closed
+        ? `Also show clinics, externships and independent study (${p.hiddenApplicationOnly} hidden). These are application-only placements, and enrollment for ${p.terms[0]} opened on ${fmtDate(ao.treatClosedFrom)}, so their application window is treated as closed. Ask the clinic director whether a seat is still open.`
+        : "Show clinics, externships and independent study (application-only placements).");
+    const seats = (s) => s.status ? `${s.status}${s.seats ? ` · ${s.seats.available} of ${s.seats.capacity} open` : ""}` : "see LionPATH";
+    const row = (s) => h("tr", {},
+      h("td", { class: "code" }, `${s.code}-${s.section}`, h("div", { class: "ga-muted small" }, `#${s.classNbr}`)),
+      h("td", {}, s.name,
+        s.application ? h("span", { class: "ga-tag" }, "application") : null,
+        s.note ? h("div", { class: "ga-muted small" }, s.note) : null),
+      h("td", { class: "num" }, s.credits === "?" ? h("span", { class: "ga-warn small" }, `check LionPATH (${s.creditsSource})`) : s.credits),
+      h("td", { class: "small" }, s.meets, h("div", { class: "ga-muted" }, s.mode)),
+      h("td", { class: "small" }, seats(s)),
+      h("td", { class: "small" }, s.reasons.join("; ")));
+    const head = h("thead", {}, h("tr", {}, h("th", {}, "Class"), h("th", {}, "Course"), h("th", { class: "num" }, "Credits"), h("th", {}, "Meets"), h("th", {}, "Status"), h("th", {}, "Would count toward")));
+    const top = p.suggestions.slice(0, 15);
+    const rest = p.suggestions.slice(15);
+    return section(title,
+      h("p", {}, `${p.terms[0]} sections at University Park as LionPATH listed them on ${fmtDate(p.readOn)}, with their class codes and section numbers. Only sections that would close an open requirement or move a concentration within 6 credits of complete are listed, most useful first. Seats change hourly: LionPATH is the live source.`),
+      toggle,
+      p.suggestions.length
+        ? h("div", { class: "ga-table-wrap" }, h("table", { class: "ga-table" }, head, h("tbody", {}, top.map(row))))
+        : h("p", { class: "ga-note" }, "Nothing offered this term would close an open requirement or a concentration within 6 credits."),
+      rest.length ? h("details", {}, h("summary", {}, `Show ${rest.length} more`),
+        h("div", { class: "ga-table-wrap" }, h("table", { class: "ga-table" }, head.cloneNode(true), h("tbody", {}, rest.map(row))))) : null,
+      h("p", { class: "ga-muted small" },
+        `Status and seats were read only for Special Topics (997) sections. "Point-to-point from Carlisle" means in-person attendance in the assigned University Park classroom. Last day to add: ${fmtDate(p.dates.lastDayToAdd)}. Watch the 17-credit maximum.`));
+  }
+
+  // Course chart fallback (names only).
+  if (!p.suggestions.length) return section(title, h("p", {}, "Nothing on the course chart would close an open requirement or a concentration within 6 credits."));
   const row = (s) => h("tr", {},
     h("td", { class: "code" }, s.code ?? s.prefix),
     h("td", {}, s.name, s.temporary ? h("span", { class: "ga-muted" }, " *") : null, s.clinic ? h("span", { class: "ga-tag" }, "application") : null),
@@ -262,8 +305,8 @@ function renderPlanner(r) {
   const head = h("thead", {}, h("tr", {}, h("th", {}, "Code"), h("th", {}, "Course"), h("th", { class: "num" }, "Credits"), h("th", {}, "Would count toward")));
   const top = p.suggestions.slice(0, 12);
   const rest = p.suggestions.slice(12);
-  return section(`Options for ${p.terms.join(", ")}`,
-    h("p", {}, "Courses the course chart lists for the coming semester that would close an open requirement or move a concentration that's within 6 credits of complete. Courses on the most lists come first."),
+  return section(title,
+    h("p", {}, "Courses the course chart lists for the coming semester that would close an open requirement or move a concentration that's within 6 credits of complete. Courses on the most lists come first. No verified LionPATH section list exists for this term yet."),
     h("div", { class: "ga-table-wrap" }, h("table", { class: "ga-table" }, head, h("tbody", {}, top.map(row)))),
     rest.length ? h("details", {}, h("summary", {}, `Show ${rest.length} more`),
       h("div", { class: "ga-table-wrap" }, h("table", { class: "ga-table" }, head.cloneNode(true), h("tbody", {}, rest.map(row))))) : null,
