@@ -1,23 +1,30 @@
 /**
- * app.js: the page. Wires the file input to parser.js and engine.js and renders the result.
+ * app.js: the page. Wires the two inputs (a LionPATH PDF via parser.js, or the course picker via
+ * manual.js) to engine.js and renders the result.
  *
  * This is the ONLY file that touches the DOM. It:
  *   - reads the chosen PDF with File.arrayBuffer() (local; nothing is uploaded),
  *   - loads pdf.js from ./vendor only when a PDF is chosen, and points its worker at ./vendor,
- *   - renders results with textContent only. Transcript text is never inserted as HTML, so a crafted
- *     PDF cannot inject markup or script (and the CSP in index.html forbids inline script anyway).
+ *   - keeps the course picker's rows in a plain array in memory (`picker`) and rebuilds the table
+ *     from it; manual.js turns the rows into Course records,
+ *   - renders results with textContent only. Transcript text and typed text are never inserted as
+ *     HTML, so a crafted PDF cannot inject markup or script (and the CSP in index.html forbids
+ *     inline script anyway).
  * It stores nothing: no localStorage, cookies or IndexedDB. Reloading the page clears everything.
  */
-import * as rules from "./rules.js";
+// "?v=N": the demo host (Cloudflare) caches .js files for 4 hours. A changed module gets a new
+// query string here so visitors load the new version at once. Not needed on a host without that
+// cache. Modules that import each other (engine.js → match.js) are unversioned inside; bump the
+// importer here when a dependency changes. See IT-HANDOFF.md §3 "Caching".
+import * as rules from "./rules.js?v=2";
 import catalog from "./data/catalog.js";
-import lists from "./data/intranet-lists.js";
+import lists from "./data/intranet-lists.js?v=2";
 import concentrations from "./data/concentrations.js";
 import chart from "./data/course-chart.js";
-// "?v=3": the demo host (Cloudflare) caches .js files for 4 hours. A changed module gets a new
-// query string here so visitors load the new version at once. Not needed on a host without that cache.
 import { parsePdfPages, parseAnyText, extractPdfPages } from "./parser.js?v=3";
-import { runAudit, describeCatalog, statusWord } from "./engine.js";
-import { sampleTranscriptLines, sampleReportPages } from "./sample.js?v=3";
+import { runAudit, describeCatalog, statusWord } from "./engine.js?v=2";
+import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "./sample.js?v=3";
+import { gradeChoices, termList, firstYearPicks, pickableCourses, topicSuggestions, buildManualCourses } from "./manual.js?v=1";
 
 const DATA = { rules, catalog, lists, concentrations, chart };
 
@@ -46,8 +53,18 @@ const PILL = {
   open: ["is-open", "Open"],
   confirm: ["is-info", "Confirm"],
 };
-const pill = (status) => h("span", { class: `ga-pill ${PILL[status][0]}` }, PILL[status][1]);
+/**
+ * Status pill. `via` ("UP"/"DL") adds which 303(c) list the course came from: "Met – UP" (A13).
+ * `selfReported` adds "(self-reported)" when the status rests on a P grade from the picker (A12).
+ */
+const pill = (status, via = null, selfReported = false) =>
+  h("span", { class: `ga-pill ${PILL[status][0]}${selfReported ? " is-self" : ""}` },
+    PILL[status][1] + (via ? ` – ${via}` : "") + (selfReported ? " (self-reported)" : ""));
 const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+/** Grade as shown in tables: the self-reported "P" is spelled out so nobody mistakes it for a Pass grade. */
+const gradeText = (g) => (g === rules.SELF_REPORTED_GRADE ? "C or better (self-reported)" : g);
+/** Does a requirement's status rest on at least one self-reported grade? */
+const restsOnSelfReport = (q) => q.courses.some((c) => c.grade === rules.SELF_REPORTED_GRADE);
 
 // ---------------------------------------------------------------------------------------------
 // Input
@@ -80,9 +97,9 @@ async function handleFile(file) {
   audit(parsePdfPages(pages), "your PDF");
 }
 
-const FORMAT_NAMES = { advisingTranscript: "advising transcript", requirementsReport: "requirements report" };
+const FORMAT_NAMES = { advisingTranscript: "read as a LionPATH advising transcript", requirementsReport: "read as a LionPATH requirements report", manual: "entered by hand" };
 
-/** Render an audit for parser output, or show the parser's warnings if no courses were found. */
+/** Render an audit for parser/manual output, or show the warnings if no courses were found. */
 function audit(parsed, label) {
   if (!parsed.courses.length) {
     setStatus(parsed.warnings.join(" "), true);
@@ -91,8 +108,8 @@ function audit(parsed, label) {
   }
   lastCourses = parsed;
   render(parsed);
-  const kind = FORMAT_NAMES[parsed.format] ? ` (read as a LionPATH ${FORMAT_NAMES[parsed.format]})` : "";
-  setStatus(`Audited ${label}${kind}: ${parsed.courses.length} courses in ${parsed.terms.length} terms.`);
+  const kind = FORMAT_NAMES[parsed.format] ? ` (${FORMAT_NAMES[parsed.format]})` : "";
+  setStatus(`Audited ${label}${kind}: ${parsed.courses.length} courses in ${parsed.terms.length} terms.${parsed.warnings.length ? " Some rows were skipped; see the warnings in the course table." : ""}`);
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -100,13 +117,13 @@ function render(parsed) {
   const result = runAudit(parsed.courses, DATA, { asOf: new Date(), profDevConfirmed: $("profdev").checked });
   const root = $("results");
   root.replaceChildren(
-    renderBanner(result),
+    renderBanner(result, parsed.format),
     renderRequirements(result),
     renderAuditErrors(result),
     renderResidency(result),
     renderConcentrations(result),
     renderPlanner(result),
-    renderCourses(result, parsed.warnings),
+    renderCourses(result, parsed.warnings, parsed.format),
   );
   root.hidden = false;
 }
@@ -118,42 +135,59 @@ function section(title, ...body) {
   return h("section", { class: "ga-section ga-results-section" }, h("h2", {}, title), ...body);
 }
 
-function renderBanner(r) {
+function renderBanner(r, format) {
   const { state, blockers, pending, lastTerm } = r.overall;
   const term = lastTerm ?? "your final term";
+  const confirms = r.requirements.filter((q) => q.status === "confirm").map((q) => q.requirement.label);
+  const confirmNote = confirms.length ? h("p", {}, "Still to confirm (not counted either way): ", confirms.join("; "), ".") : null;
+  const selfCount = r.requirements.filter(restsOnSelfReport).length;
+  const selfReported = format === "manual"
+    ? h("p", { class: "ga-warn" }, `This record was entered by hand${selfCount ? `, and ${selfCount} requirement${selfCount === 1 ? "" : "s"} rest on grades you reported without the letter grade` : ""}. Check it against your LionPATH transcript before relying on it.`)
+    : null;
+  const verify = h("p", { class: "ga-muted small" }, "Unofficial. Only the Registrar's Office certifies graduation; confirm anything you rely on with registrar@pennstatelaw.psu.edu.");
   if (state === "complete") {
     return h("div", { class: "ga-banner is-met" }, h("h2", {}, "All requirements met"),
-      h("p", {}, "Every requirement this page can check is satisfied by completed courses."));
+      h("p", {}, "Every requirement this page can check is satisfied by completed courses."), confirmNote, selfReported, verify);
   }
   if (state === "onTrack") {
     return h("div", { class: "ga-banner is-projected" },
       h("h2", {}, `On track to graduate after ${term}`),
       h("p", {}, "Every requirement is met or will be met if your current and enrolled courses finish with a C or better. Still depending on those courses:"),
       h("ul", {}, pending.map((p) => h("li", {}, p))),
-      r.requirements.some((q) => q.status === "confirm") ? h("p", {}, "Also confirm the January 1L Professional Development program (checkbox above).") : null);
+      confirmNote, selfReported, verify);
   }
   return h("div", { class: "ga-banner is-open" },
     h("h2", {}, `Not yet on track: ${blockers.length} item${blockers.length === 1 ? "" : "s"} open`),
     h("p", {}, "Even counting current and enrolled courses, these are not satisfied:"),
     h("ul", {}, blockers.map((b) => h("li", {}, b))),
-    h("p", {}, "See the remaining-semester options below."));
+    h("p", {}, "See the remaining-semester options below."), confirmNote, selfReported, verify);
 }
 
 function renderRequirements(r) {
   const rows = r.requirements.map((q) =>
     h("tr", {},
       h("td", {}, q.requirement.label),
-      h("td", {}, pill(q.status)),
+      h("td", {}, pill(q.status, q.via, restsOnSelfReport(q))),
       h("td", { class: "small" }, q.detail, q.verify.length ? h("div", { class: "ga-warn" }, "Verify: ", q.verify.join("; ")) : null),
       h("td", { class: "small" }, q.requirement.lionpath
         ? h("span", { class: "ga-warn" }, q.courses.length ? "LionPATH can't count this (see below)" : "LionPATH line is miscoded")
-        : h("span", { class: "ga-muted" }, "Counts correctly"))));
+        : q.requirement.source === "flowchart"
+          ? h("span", { class: "ga-muted" }, "Not an audit line (flowchart rule)")
+          : h("span", { class: "ga-muted" }, "Counts correctly"))));
+  const up = lists.aba303c.universityPark;
+  const gpaText = r.gpa.gpa == null
+    ? (r.gpa.selfReported ? "GPA not computed: some grades were self-reported without the letter." : "GPA not computed: no letter grades yet.")
+    : `Reconstructed GPA ${r.gpa.gpa.toFixed(2)} from ${fmt(r.gpa.units)} letter-graded credits (A14; the official figure is on your transcript).`;
   return section("Graduation requirements",
     h("div", { class: "ga-table-wrap" }, h("table", { class: "ga-table" },
       h("thead", {}, h("tr", {}, h("th", {}, "Requirement"), h("th", {}, "Status"), h("th", {}, "How it's met"), h("th", {}, "LionPATH audit"))),
       h("tbody", {}, rows))),
+    h("dl", { class: "ga-key" },
+      h("div", {}, h("dt", {}, "Met – UP:"), h("dd", {}, "the course is on the Intranet's ", h("a", { href: up.source, rel: "noopener" }, "ABA 303(c) Course Requirement – University Park"), ` page, written for students admitted to Penn State Law, University Park, Fall 2023 and later, prior to reunification (last updated ${fmtDate(up.lastUpdated)}).`)),
+      h("div", {}, h("dt", {}, "Met – DL:"), h("dd", {}, "the course is only on the unified ", h("a", { href: lists.aba303c.source, rel: "noopener" }, "ABA Standard 303(c) – Civil Rights, Equal Protection and Social Justice Courses"), ` page for all Dickinson Law students (last updated ${fmtDate(lists.aba303c.lastUpdated)}). Every UP-list course is also on it. Ask the registrar which list governs your cohort before relying on a DL-only course (A13).`)),
+      h("div", {}, h("dt", {}, "(self-reported):"), h("dd", {}, "the status rests on a grade you entered as \"C or better\" without the letter grade. It is taken at your word (A12); check it against your transcript."))),
     h("p", { class: "ga-note" },
-      `Credits: ${fmt(r.totals.earned)} earned, ${fmt(r.totals.inProgress)} in progress, ${fmt(r.totals.enrolled)} enrolled for a future term = ${fmt(r.totals.projected)} projected. "On track" assumes a C or better in every unfinished course.`));
+      `Credits: ${fmt(r.totals.earned)} earned, ${fmt(r.totals.inProgress)} in progress, ${fmt(r.totals.enrolled)} enrolled for a future term = ${fmt(r.totals.projected)} projected. "On track" assumes a C or better in every unfinished course. ${gpaText}`));
 }
 
 /**
@@ -235,22 +269,23 @@ function renderPlanner(r) {
     h("p", { class: "ga-muted small" }, "* not a permanent part of the curriculum. Clinics require an application. Offerings are anticipated and subject to change; adjunct-taught courses aren't on the chart. Watch the 17-credit semester maximum."));
 }
 
-function renderCourses(r, warnings) {
+function renderCourses(r, warnings, format) {
   const usedFor = new Map();
   for (const q of r.requirements) for (const c of q.courses) {
     if (["oneCourse", "credits"].includes(q.requirement.kind)) usedFor.set(c, [...(usedFor.get(c) ?? []), q.requirement.label.replace(/ \(C or better\)$/, "")]);
   }
-  return section("Your courses as read from the transcript",
-    warnings.length ? h("div", { class: "ga-note ga-warn" }, h("strong", {}, "Reading warnings: "), warnings.join(" ")) : null,
+  const manual = format === "manual";
+  return section(manual ? "Your courses as entered" : "Your courses as read from the transcript",
+    warnings.length ? h("div", { class: "ga-note ga-warn" }, h("strong", {}, manual ? "Skipped rows: " : "Reading warnings: "), warnings.join(" ")) : null,
     h("div", { class: "ga-table-wrap is-tall" }, h("table", { class: "ga-table" },
       h("thead", {}, h("tr", {}, h("th", {}, "Term"), h("th", {}, "Code"), h("th", {}, "Course (official title)"), h("th", { class: "num" }, "Credits"), h("th", {}, "Grade"), h("th", {}, "Used for"))),
       h("tbody", {}, r.courses.map((c) => h("tr", {},
         h("td", { class: "small" }, c.term),
         h("td", { class: "code" }, c.code),
-        h("td", {}, c.title, c.title !== c.description ? h("div", { class: "ga-muted small" }, `Transcript: ${c.description}`) : null,
+        h("td", {}, c.title, c.title !== c.description && !manual ? h("div", { class: "ga-muted small" }, `Transcript: ${c.description}`) : null,
           !c.inCatalog ? h("div", { class: "ga-muted small" }, "Not in the current Bulletin") : null),
         h("td", { class: "num" }, fmt(c.status === "done" || c.status === "withdrawn" ? c.earned : c.attempted)),
-        h("td", {}, c.grade ?? h("span", { class: "ga-muted" }, statusWord(c.status))),
+        h("td", {}, c.grade ? gradeText(c.grade) : h("span", { class: "ga-muted" }, statusWord(c.status))),
         h("td", { class: "small" }, (usedFor.get(c) ?? []).join(", "))))))));
 }
 
@@ -295,6 +330,191 @@ function renderHow() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Course picker (the "Pick your courses" tab): a term-by-term checklist, 1L Fall through the final
+// Spring, in the order the courses were taken. Each term lists its courses and has its own "add a
+// course" search box. State lives in `picker`; the table is rebuilt from it after every change.
+// manual.js converts it to Course records when the student runs the audit.
+// ---------------------------------------------------------------------------------------------
+const picker = {
+  startYear: 2024,
+  firstYearDone: true, // adds the ten PSLFY courses (rules.FIRST_YEAR_COURSES) to the two 1L terms
+  firstYearGrades: {}, // code → letter grade, entered inline on the 1L rows (optional; GPA checks only)
+  picks: [], // upper-level rows: { id, code, title, term, credits, grade, topic, specialTopics }
+  focusTerm: null, // which term's search box to focus after a re-render
+};
+const PICKABLE = pickableCourses(DATA);
+const GRADES = gradeChoices(rules);
+let pickId = 0;
+
+/** All picks in transcript order: the 1L block (if checked) followed by the upper-level rows. */
+function allPicks() {
+  const fy = picker.firstYearDone ? firstYearPicks(picker.startYear, rules, picker.firstYearGrades) : [];
+  return [...fy, ...picker.picks];
+}
+
+/** "1L", "2L", "3L" for fall/spring terms; "Summer after 1L" for summers. */
+function yearLabel(term) {
+  const [season, year] = term.split(" ");
+  const y = Number(year) - picker.startYear - (season === "Fall" ? 0 : 1);
+  return season === "Summer" ? `Summer after ${y + 1}L` : `${y + 1}L`;
+}
+
+function addPick(course, term, overrides = {}) {
+  picker.picks.push({
+    id: ++pickId,
+    code: course.code,
+    title: course.title,
+    term,
+    credits: course.defaultCredits ?? course.credits ?? 3,
+    variableCredits: Boolean(course.variableCredits),
+    grade: rules.SELF_REPORTED_GRADE,
+    topic: null,
+    specialTopics: Boolean(course.specialTopics),
+    ...overrides,
+  });
+  picker.focusTerm = term;
+  renderPicks();
+}
+
+function select(options, value, onchange, attrs = {}) {
+  return h("select", { ...attrs, onchange: (ev) => onchange(ev.target.value) },
+    options.map((o) => h("option", { value: o.value, selected: o.value === value ? true : null }, o.label)));
+}
+
+/** Search box for one term: matching catalog courses appear underneath; clicking one adds it to that term. */
+function addRow(term) {
+  const results = h("ul", { class: "ga-results", "aria-label": `Matching courses for ${term}` });
+  const input = h("input", {
+    type: "search", class: "ga-add-input", autocomplete: "off",
+    placeholder: `Add a course to ${term}: type a code or title`,
+    "aria-label": `Add a course to ${term}`,
+    oninput: (ev) => {
+      const q = ev.target.value.trim().toLowerCase();
+      if (!q) { results.replaceChildren(); return; }
+      const hits = PICKABLE.filter((c) => c.search.includes(q)).slice(0, 25);
+      const items = hits.map((c) => h("li", {},
+        h("button", { type: "button", onclick: () => addPick(c, term) },
+          h("span", { class: "code" }, c.code), h("span", {}, c.title, c.specialTopics ? " (topic varies)" : ""), h("span", { class: "credits" }, `${c.credits} cr`))));
+      if (!items.length) items.push(h("li", {}, h("span", { class: "ga-muted small" }, "No match. Use \"Course not in the catalog\" below to add it by code.")));
+      results.replaceChildren(...items); // replaceChildren() would print a bare null as text, so never pass one
+    },
+  });
+  if (picker.focusTerm === term) queueMicrotask(() => input.focus());
+  return h("tr", { class: "ga-add-row" }, h("td", { colspan: 6 }, input, results));
+}
+
+function renderPicks() {
+  const table = $("picks-table");
+  const terms = termList(picker.startYear);
+  const termOptions = terms.map((t) => ({ value: t, label: t }));
+  const fy = picker.firstYearDone ? firstYearPicks(picker.startYear, rules, picker.firstYearGrades) : [];
+  const fyGradeChoices = GRADES.filter((g) => g.value !== "" && g.value !== "W");
+  const body = [];
+  let total = 0;
+  for (const term of terms) {
+    const fyRows = fy.filter((p) => p.term === term);
+    const rows = picker.picks.filter((p) => p.term === term);
+    const credits = [...fyRows, ...rows].reduce((n, p) => n + (Number(p.credits) || 0), 0);
+    total += credits;
+    body.push(h("tr", { class: `ga-term-row${term.startsWith("Summer") ? " is-summer" : ""}` },
+      h("th", { colspan: 5 }, `${yearLabel(term)} · ${term}`),
+      h("th", { class: "num" }, credits ? `${fmt(credits)} cr` : "")));
+    for (const p of fyRows) {
+      body.push(h("tr", { class: "is-first-year" },
+        h("td", { class: "code" }, p.code),
+        h("td", {}, p.title, h("div", { class: "ga-muted small" }, "first-year required")),
+        h("td", { class: "small" }, p.term),
+        h("td", { class: "num" }, fmt(p.credits)),
+        h("td", {}, select(fyGradeChoices, picker.firstYearGrades[p.code] ?? rules.SELF_REPORTED_GRADE, (v) => {
+          if (v === rules.SELF_REPORTED_GRADE) delete picker.firstYearGrades[p.code]; else picker.firstYearGrades[p.code] = v;
+        }, { "aria-label": `Grade for ${p.code}` })),
+        h("td", {})));
+    }
+    for (const p of rows) {
+      body.push(h("tr", {},
+        h("td", { class: "code" }, p.code),
+        h("td", {}, p.title,
+          p.specialTopics
+            ? h("div", {}, h("label", { class: "ga-visually-hidden", for: `topic-${p.id}` }, "Topic"),
+                h("input", { type: "text", id: `topic-${p.id}`, list: "topic-list", placeholder: "Topic as printed on your transcript", value: p.topic ?? "", oninput: (ev) => { p.topic = ev.target.value; } }))
+            : null),
+        h("td", {}, select(termOptions, p.term, (v) => { p.term = v; picker.focusTerm = null; renderPicks(); }, { "aria-label": "Term" })),
+        h("td", { class: "num" }, h("input", { type: "number", min: "0.5", max: "17", step: "0.5", value: p.credits, "aria-label": "Credits", oninput: (ev) => { p.credits = Number(ev.target.value); } }),
+          p.variableCredits ? h("div", { class: "ga-muted small" }, "variable credits") : null),
+        h("td", {}, select(GRADES, p.grade, (v) => { p.grade = v; }, { "aria-label": "Grade" })),
+        h("td", {}, h("button", { type: "button", class: "ga-remove", onclick: () => { picker.picks = picker.picks.filter((x) => x !== p); picker.focusTerm = null; renderPicks(); } }, "Remove"))));
+    }
+    body.push(addRow(term));
+  }
+  table.replaceChildren(
+    h("thead", {}, h("tr", {}, h("th", {}, "Code"), h("th", {}, "Course"), h("th", {}, "Term"), h("th", { class: "num" }, "Credits"), h("th", {}, "Grade"), h("th", {}, ""))),
+    h("tbody", {}, body),
+    h("tfoot", {}, h("tr", {}, h("th", { colspan: 5 }, "Total credits entered"), h("th", { class: "num" }, fmt(total)))));
+  picker.focusTerm = null;
+}
+
+/** Fill the picker with the synthetic sample student (same record as the sample PDFs). */
+function fillSample() {
+  picker.startYear = 2024;
+  $("start-year").value = "2024";
+  picker.firstYearDone = true;
+  $("fy-done").checked = true;
+  picker.firstYearGrades = {};
+  picker.picks = [];
+  const byCode = new Map(PICKABLE.map((c) => [c.code, c]));
+  for (const [term, rows] of SAMPLE_TERMS) {
+    for (const [subject, number, description, attempted, , grade, topic] of rows) {
+      if (subject === "PSLFY") { if (grade) picker.firstYearGrades[`${subject} ${number}`] = grade; continue; }
+      const code = `${subject} ${number}`;
+      const cat = byCode.get(code) ?? { code, title: description, credits: attempted };
+      picker.picks.push({ id: ++pickId, code, title: cat.title, term, credits: attempted, variableCredits: false, grade: grade ?? "", topic: topic ?? null, specialTopics: Boolean(cat.specialTopics) });
+    }
+  }
+  picker.focusTerm = null;
+  renderPicks();
+}
+
+function initPicker() {
+  $("start-year").addEventListener("change", (ev) => { picker.startYear = Number(ev.target.value); renderPicks(); });
+  $("fy-done").addEventListener("change", (ev) => { picker.firstYearDone = ev.target.checked; renderPicks(); });
+  $("custom-add").addEventListener("click", () => {
+    const code = $("custom-code").value.trim().toUpperCase();
+    const title = $("custom-title").value.trim();
+    const credits = Number($("custom-credits").value);
+    const term = $("custom-term").value;
+    if (!/^[A-Z]{2,6} \d{3}[A-Z]?$/.test(code)) { setStatus("The code must look like \"LWELA 903\".", true); return; }
+    if (!title) { setStatus("Give the course a title.", true); return; }
+    addPick({ code, title, credits, defaultCredits: credits, specialTopics: rules.SPECIAL_TOPICS_TITLE.test(title) }, term);
+    $("custom-code").value = ""; $("custom-title").value = "";
+    setStatus("");
+  });
+  const customTerm = $("custom-term");
+  const fillCustomTerms = () => customTerm.replaceChildren(...termList(picker.startYear).map((t) => h("option", { value: t }, t)));
+  fillCustomTerms();
+  $("start-year").addEventListener("change", fillCustomTerms);
+  $("run-manual").addEventListener("click", () => audit(buildManualCourses(allPicks()), "your course selections"));
+  $("manual-sample").addEventListener("click", fillSample);
+  $("manual-clear").addEventListener("click", () => { picker.picks = []; picker.firstYearGrades = {}; renderPicks(); setStatus(""); });
+  $("topic-list").replaceChildren(...topicSuggestions(DATA).map((t) => h("option", { value: t })));
+  renderPicks();
+}
+
+/** The two input tabs. Only the visible panel's controls are used; switching never clears anything. */
+function initModes() {
+  const modes = [["mode-pdf", "panel-pdf"], ["mode-manual", "panel-manual"]];
+  for (const [btn, panel] of modes) {
+    $(btn).addEventListener("click", () => {
+      for (const [b, p] of modes) {
+        const on = b === btn;
+        $(b).classList.toggle("is-active", on);
+        $(b).setAttribute("aria-selected", on ? "true" : "false");
+        $(p).hidden = !on;
+      }
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
 // Wire up
 // ---------------------------------------------------------------------------------------------
 function init() {
@@ -307,6 +527,8 @@ function init() {
   $("try-sample-report").addEventListener("click", () => audit(parsePdfPages(sampleReportPages()), "the synthetic sample"));
   $("use-paste").addEventListener("click", () => audit(parseAnyText($("paste").value), "the pasted text"));
   $("profdev").addEventListener("change", () => lastCourses && render(lastCourses));
+  initModes();
+  initPicker();
   renderCatalog();
   renderHow();
 }

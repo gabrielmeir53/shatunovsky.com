@@ -17,11 +17,14 @@
 
 /** Where each rule comes from. Referenced by key from the rules below. */
 export const SOURCES = {
-  checklist: "J.D. Degree Requirements Checklist (University Park students admitted prior to FA2025), last updated 10/20/2025",
-  seminarPage: "Dickinson Law Intranet, Seminar Courses page (copied October 2026)",
-  aba303cPage: "Dickinson Law Intranet, ABA Standard 303(c) Civil Rights, Equal Protection and Social Justice Courses page (last updated 3/26/2026)",
+  checklist: "J.D. Degree Requirements Checklist (University Park students admitted prior to FA2025), Intranet PDF last updated 10/20/2025",
+  flowchart: "Curriculum Flowchart - University Park Pre-2025 (Intranet PDF \"Planning form for University Park Students who entered before Fall 2025\", 9/24/2025; re-read 11/04/2026)",
+  publicPage: "dickinsonlaw.psu.edu > Academics > J.D. Program > Degree Requirements, section \"Penn State Law J.D. Requirements (Prior to Reunification)\" (read 11/04/2026; same seven requirements as the checklist)",
+  seminarPage: "Dickinson Law Intranet, Seminar Courses page (copied October 2026; re-checked against the live page 11/04/2026, no changes)",
+  aba303cUpPage: "Dickinson Law Intranet, \"ABA 303(c) Course Requirement - University Park\" page, for students admitted to Penn State Law, University Park, in Fall 2023 and later (prior to reunification); last updated 9/16/2025 (read 11/04/2026)",
+  aba303cPage: "Dickinson Law Intranet, \"ABA Standard 303(c) - Civil Rights, Equal Protection and Social Justice Courses\" page (unified Dickinson Law list, last updated 3/26/2026; re-read 11/04/2026)",
   concentrationsPdf: "Concentrations - University Park, students admitted prior to Fall 2025 (Intranet, October 2026)",
-  lionpath: "LionPATH > Degree Planning and Progress > My Academic Requirements, observed 11/04/2026 for a Class of 2027 student",
+  lionpath: "LionPATH > Degree Planning and Progress > My Academic Requirements, observed 11/04/2026 for a Class of 2027 student. LionPATH Class Search > Class Information shows \"No Class Attributes\" for 303(c) and experiential courses (checked 11/04/2026 on LWELA 963 and LWEXP 975), so LionPATH carries no per-course 303(c) flag the audit could read; the Intranet lists are the only machine-usable source.",
   bulletin: "Penn State University Bulletin, Law course descriptions (snapshot date in data/catalog.js)",
 };
 
@@ -31,8 +34,48 @@ export const SOURCES = {
  */
 export const GRADE_ORDER = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"];
 
+/**
+ * Quality points per credit for each letter grade (Penn State's 4.0 scale, as printed in the
+ * "Points" column of the advising transcript: A- = 3.67/credit, B+ = 3.33, C+ = 2.33, and so on).
+ * Used only for the GPA-based checks below (gpaBarSkills, goodStanding). CR, P, W and the like
+ * carry no points and are left out of the GPA, which is how LionPATH computes it too (A14).
+ */
+export const GRADE_POINTS = { A: 4, "A-": 3.67, "B+": 3.33, B: 3, "B-": 2.67, "C+": 2.33, C: 2, "C-": 1.67, "D+": 1.33, D: 1, "D-": 0.67, F: 0 };
+
+/**
+ * Grade code the manual course picker uses when a student says "completed with a C or better" but
+ * does not enter the letter grade (A12). It satisfies every "C or better" rule and earns credit,
+ * but it has no quality points, so GPA-based checks report "unknown" until letter grades are entered.
+ * It never appears on a LionPATH document.
+ */
+export const SELF_REPORTED_GRADE = "P";
+
 /** Subjects that hold first-year required courses (excluded from 303(c), A4). */
 export const FIRST_YEAR_SUBJECTS = ["PSLFY"];
+
+/**
+ * The ten first-year required courses with their credits (checklist and flowchart: 16 + 16 = 32).
+ * Used by the manual course picker (manual.js) to add a student's 1L year in one step, and by the
+ * core1lFall / core1lSpring requirements below. Titles are the checklist's; the transcript
+ * abbreviates them ("LEG RES TLS & STRT").
+ */
+export const FIRST_YEAR_COURSES = {
+  fall: [
+    { code: "PSLFY 900", title: "Civil Procedure", credits: 4 },
+    { code: "PSLFY 910", title: "Criminal Law", credits: 3 },
+    { code: "PSLFY 908", title: "Legal Research Tools and Strategies", credits: 2 },
+    { code: "PSLFY 912", title: "Applied Legal Analysis & Writing I", credits: 3 },
+    { code: "PSLFY 925", title: "Torts", credits: 4 },
+  ],
+  spring: [
+    { code: "PSLFY 903", title: "Constitutional Law I", credits: 3 },
+    { code: "PSLFY 905", title: "Contracts", credits: 4 },
+    { code: "PSLFY 907", title: "Criminal Procedure", credits: 3 },
+    { code: "PSLFY 914", title: "Applied Legal Analysis & Writing II", credits: 2 },
+    { code: "PSLFY 920", title: "Property", credits: 4 },
+  ],
+  source: "checklist",
+};
 
 /**
  * "Special Topics" course codes: the catalog title is generic, so the course's real title only
@@ -117,15 +160,25 @@ export const REQUIREMENTS = [
     kind: "oneCourse",
     minGrade: "C",
     exclusive: true,
+    // Two Intranet lists exist (A13):
+    //   - "aba303cUP": the University Park page written for this cohort (students admitted to Penn
+    //     State Law, UP, Fall 2023 and later, prior to reunification). 13 courses. A course on it
+    //     satisfies the requirement outright.
+    //   - "aba303c": the unified Dickinson Law page (newer, 45 courses, a superset of the UP list).
+    //     A course found ONLY here is counted, but flagged "verify with the registrar", because the
+    //     cohort-specific page does not list it.
     list: "aba303c",
+    primaryList: "aba303cUP",
     excludeFirstYear: true, // "one course beyond the first-year required courses" (A4)
-    source: "aba303cPage",
+    source: "aba303cUpPage",
     lionpath: {
       accepts: "(no course list; the line asks for 1 to 3 units and shows nothing that can satisfy it)",
       problem: "The audit line has no course list attached, so no course on the Intranet 303(c) list can satisfy it.",
       fix:
-        "Attach the Intranet 303(c) course list to the ABA 303(c) requirement line, by course ID where the " +
-        "course has its own catalog number and by topic for Special Topics sections (see data/intranet-lists.js).",
+        "Attach the Intranet's University Park 303(c) course list (data/intranet-lists.js aba303c.universityPark) " +
+        "to the ABA 303(c) requirement line, by course ID where the course has its own catalog number and by " +
+        "topic for Special Topics sections. If the unified Dickinson Law list is meant to apply to this cohort " +
+        "too, attach that list instead (aba303c.courses); the registrar should say which.",
     },
   },
   {
@@ -156,6 +209,33 @@ export const REQUIREMENTS = [
     detail:
       "A non-credit program in January of the first year. It does not appear on the transcript, so " +
       "the page asks the student to confirm it (A7).",
+  },
+  {
+    // Flowchart "Please Note": "Students with cumulative GPAs under or equal to 2.70 will be subject
+    // to the conditions of the Enhanced Academic Support Program. Students will be required to meet
+    // with the Associate Dean for Academic Success and satisfactorily complete BAREX 900: Fundamental
+    // Skills for the Bar Exam in Spring of the third year if their GPA remains at 2.70 or below in
+    // any subsequent semester." Post-merger the course is LWELB 900 (Bulletin).
+    id: "gpaBarSkills",
+    label: "Cumulative GPA above 2.70 (otherwise Fundamental Skills for the Bar Exam in the final spring)",
+    kind: "gpaCondition",
+    threshold: 2.7, // "under or equal to 2.70" triggers the condition
+    nearMargin: 0.05, // within this of the threshold the page gives no verdict and points to the official GPA (A14)
+    codes: ["LWELB 900", "BAREX 900"],
+    source: "flowchart",
+    detail: "Computed from letter grades on the 4.0 scale (A14); the official GPA is on the transcript.",
+  },
+  {
+    // Flowchart "Good Academic Standing": "Each student must earn a GPA of at least 2.0 at the end of
+    // each semester, except for the first semester of the first year. Students may not receive more
+    // than 2 F's while enrolled." Checked on the cumulative GPA after each graded fall/spring term.
+    id: "goodStanding",
+    label: "Good academic standing (cumulative GPA 2.0 or better; no more than two F's)",
+    kind: "gpaMinimum",
+    minGpa: 2.0,
+    nearMargin: 0.05, // a cumulative GPA within this of 2.0 is flagged for an official check (A14)
+    maxFails: 2,
+    source: "flowchart",
   },
 ];
 
@@ -255,4 +335,7 @@ export const ASSUMPTIONS = [
   { id: "A9", text: "Special Topics sections (catalog title \"Special Topics\") match requirement and concentration lists by the topic printed on the transcript, because the course code alone does not identify the course.", where: "engine.js courseTitleKeys()" },
   { id: "A10", text: "Concentration items listed under \"Additional Experiential Opportunities\" (externships, moot court, etc.) need Associate Dean approval that the work related to the concentration, so they are shown but never counted automatically.", where: "engine.js scoreConcentrations()" },
   { id: "A11", text: "Withdrawn (W), failed, and incomplete courses earn no credit and satisfy nothing. Courses below C still earn credit toward 88 if credits were earned, but do not satisfy C-or-better requirements or concentrations.", where: "engine.js gradeMeets(), totals()" },
+  { id: "A12", text: "In the manual course picker, a course marked \"completed, C or better\" without a letter grade is recorded with the grade code P. It satisfies C-or-better rules and earns its credits, on the student's word; the printed audit says the record was self-reported and must be checked against the transcript.", where: "rules.js SELF_REPORTED_GRADE, engine.js gradeMeets(), manual.js" },
+  { id: "A13", text: "For ABA 303(c), the Intranet's University Park page (written for students admitted to Penn State Law, UP, Fall 2023 and later, prior to reunification) is the primary list. The unified Dickinson Law page is a superset; a course found only there is counted but flagged \"verify with the registrar\". The checklist itself only says \"one course approved by the faculty\".", where: "rules.js REQUIREMENTS aba303c.primaryList, engine.js eligibility()" },
+  { id: "A14", text: "GPA is computed from letter grades using Penn State's 4.0 scale (GRADE_POINTS), weighting each course by its credits; CR, P and W carry no points. The transcript's printed GPA is deliberately not read (privacy), so the page's figure is a reconstruction and can differ by rounding. A reconstructed GPA within 0.05 of a threshold (2.70 bar-skills condition, 2.0 good standing) therefore gets no verdict: the line says to use the official LionPATH GPA. With self-reported P grades the GPA is unknown and GPA-based lines ask for letter grades.", where: "rules.js GRADE_POINTS, nearMargin; engine.js gpaDetail()" },
 ];

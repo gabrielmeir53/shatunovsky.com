@@ -29,11 +29,29 @@ for (const a of rules.TITLE_ALIASES) {
   if (!a.specialTopic && !catalogKeys.has(normalizeTitle(a.to))) errors.push(`Alias target not in catalog: "${a.to}" (from "${a.from}")`);
   if (!a.note) errors.push(`Alias without a note: "${a.from}"`);
 }
-const KINDS = new Set(["totalCredits", "residency", "allOf", "oneCourse", "credits", "attestation"]);
+const KINDS = new Set(["totalCredits", "residency", "allOf", "oneCourse", "credits", "attestation", "gpaCondition", "gpaMinimum"]);
+const LISTS = ["seminar", "aba303c", "aba303cUP"];
 for (const r of rules.REQUIREMENTS) {
   if (!KINDS.has(r.kind)) errors.push(`Requirement ${r.id}: unknown kind "${r.kind}"`);
-  if (r.list && !["seminar", "aba303c"].includes(r.list)) errors.push(`Requirement ${r.id}: unknown list "${r.list}"`);
+  if (r.list && !LISTS.includes(r.list)) errors.push(`Requirement ${r.id}: unknown list "${r.list}"`);
+  if (r.primaryList && !LISTS.includes(r.primaryList)) errors.push(`Requirement ${r.id}: unknown primaryList "${r.primaryList}"`);
   if (!rules.SOURCES[r.source]) errors.push(`Requirement ${r.id}: unknown source "${r.source}"`);
+}
+// The University Park 303(c) list must be a subset of the unified list (A13 relies on this: a course
+// is "UP" or "DL only", never "UP only"). If the Intranet changes that, the engine still works, but
+// the wording on the page ("DL list only") would need a look.
+{
+  const unified = new Set(lists.aba303c.courses.flatMap((e) => entryKeys(e.title, aliases)));
+  for (const e of lists.aba303c.universityPark.courses) {
+    if (!entryKeys(e.title, aliases).some((k) => unified.has(k))) errors.push(`303(c): UP-list entry "${e.title}" is not on the unified list (add it there, or an alias in rules.js)`);
+  }
+}
+// Every first-year course in rules.FIRST_YEAR_COURSES must be one the 1L requirements expect, and vice versa.
+{
+  const expected = new Set(rules.REQUIREMENTS.filter((r) => r.kind === "allOf").flatMap((r) => r.codes));
+  const listed = new Set([...rules.FIRST_YEAR_COURSES.fall, ...rules.FIRST_YEAR_COURSES.spring].map((c) => c.code));
+  for (const c of expected) if (!listed.has(c)) errors.push(`FIRST_YEAR_COURSES is missing ${c}`);
+  for (const c of listed) if (!expected.has(c)) errors.push(`FIRST_YEAR_COURSES lists ${c}, which no 1L requirement expects`);
 }
 
 // Which list entries don't resolve to a catalog course?
@@ -46,7 +64,8 @@ const note = (where, entry) => {
 };
 for (const c of concentrations.concentrations) for (const e of [...c.courses, ...c.clinics]) note(`concentration: ${c.name}`, e);
 for (const e of lists.seminar.currentLWSEM) note("seminar list (current LWSEM)", e.title);
-for (const e of lists.aba303c.courses) note("303(c) list", e.title);
+for (const e of lists.aba303c.courses) note("303(c) list (unified)", e.title);
+for (const e of lists.aba303c.universityPark.courses) note("303(c) list (University Park)", e.title);
 for (const r of chart.rows) if (r.prefix !== "LWLLM") note(`course chart (${r.prefix})`, r.name);
 
 console.log(`Catalog: ${catalog.courses.length} courses, snapshot ${catalog.snapshot}`);

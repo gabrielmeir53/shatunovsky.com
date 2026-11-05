@@ -16,14 +16,15 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <title>Class of 2027 Graduation Audit &mdash; Penn State Dickinson Law (University Park)</title>
-  <meta name="description" content="Unofficial graduation audit for University Park J.D. students admitted before Fall 2025. Runs entirely in your browser.">
+  <title>Class of 2027 Graduation Audit &mdash; Penn State Law, University Park (pre-reunification)</title>
+  <meta name="description" content="Unofficial graduation audit for J.D. students admitted to Penn State Law, University Park, before Fall 2025. Runs entirely in your browser.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../css/style.css?v=5">
   <!-- Cloudflare caches .js/.css at the edge for 4 hours. Bump ?v= whenever app.js or audit.css
-       changes so visitors get the new file immediately (same pattern as ../css/style.css?v=5). -->
-  <link rel="stylesheet" href="audit.css?v=2">
-  <script type="module" src="app.js?v=3"></script>
+       changes so visitors get the new file immediately (same pattern as ../css/style.css?v=5).
+       Modules app.js imports carry their own ?v= inside app.js. -->
+  <link rel="stylesheet" href="audit.css?v=3">
+  <script type="module" src="app.js?v=4"></script>
 </head>
 <body>
 
@@ -31,39 +32,85 @@
   <div class="container">
 
     <header class="ga-hero">
-      <p class="ga-kicker">Penn State Dickinson Law &middot; University Park</p>
+      <p class="ga-kicker">Penn State Law &middot; University Park &middot; admitted before reunification</p>
       <h1>Class of 2027 Graduation Audit</h1>
-      <p class="ga-sub">For J.D. students admitted before Fall 2025. Reads your LionPATH advising transcript and checks it against the pre-merger graduation rules, using the post-merger course codes that LionPATH&rsquo;s degree audit doesn&rsquo;t recognize.</p>
+      <p class="ga-sub">For J.D. students admitted to Penn State Law, University Park, before Fall 2025 (the Class of 2027). Load your LionPATH PDF or pick your courses by hand, and the page checks them against the pre-reunification graduation rules using the post-merger course codes that LionPATH&rsquo;s degree audit doesn&rsquo;t recognize. It also shows concentration progress and what next semester could close.</p>
     </header>
 
+    <section class="ga-disclaimer-top" role="note" aria-labelledby="disclaimer-h">
+      <h2 id="disclaimer-h">Unofficial: verify with the registrar</h2>
+      <p>This page was built by a student, not by Penn State or Penn State Dickinson Law, and it is not connected to LionPATH. It applies the written rules as published on the Intranet and in the Bulletin (sources are listed at the bottom), but only the Law School Registrar certifies graduation. Before you rely on anything here, confirm it with the Registrar&rsquo;s Office (<a href="mailto:registrar@pennstatelaw.psu.edu">registrar@pennstatelaw.psu.edu</a>) or your faculty advisor. The author accepts no responsibility for decisions made on the basis of this page, and the page may lag behind changes to the rules or the course lists.</p>
+    </section>
+
     <section class="ga-privacy" aria-labelledby="privacy-h">
-      <h2 id="privacy-h">Your transcript stays on this device</h2>
-      <p>The file is read by this page inside your browser. It is not uploaded, saved, or sent anywhere, and the page is technically blocked from making network connections (<a href="#how-privacy">how to check</a>). Closing the tab erases it.</p>
+      <h2 id="privacy-h">Your record stays on this device</h2>
+      <p>A PDF is read by this page inside your browser; courses you pick are kept in memory only. Nothing is uploaded, saved, or sent anywhere, and the page is technically blocked from making network connections (<a href="#how-privacy">how to check</a>). Closing the tab erases it.</p>
     </section>
 
     <section class="ga-input" aria-labelledby="input-h">
-      <h2 id="input-h">Load your LionPATH PDF</h2>
-      <p>Either document works:</p>
-      <ul>
-        <li><strong>Advising transcript:</strong> Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript, then save it as a PDF.</li>
-        <li><strong>Requirements report:</strong> Student Home Base &rsaquo; Degree Planning and Progress &rsaquo; My Academic Requirements &rsaquo; View Report as PDF.</li>
-      </ul>
-      <label class="ga-drop" id="drop">
-        <input type="file" id="file" accept="application/pdf,.pdf">
-        <span class="ga-drop-main">Choose the PDF or drop it here</span>
-        <span class="ga-drop-sub">PDF only &middot; read locally</span>
-      </label>
-      <div class="ga-actions">
-        <button type="button" id="try-sample" class="ga-btn ga-btn-secondary">Try a sample transcript</button>
-        <button type="button" id="try-sample-report" class="ga-btn ga-btn-secondary">Try a sample requirements report</button>
-        <span class="ga-link">Sample PDFs (made-up student): <a href="sample-transcript.pdf" download>transcript</a> &middot; <a href="sample-requirements-report.pdf" download>requirements report</a></span>
+      <h2 id="input-h">Start with your record</h2>
+      <div class="ga-modes" role="tablist" aria-label="How to enter your courses">
+        <button type="button" class="ga-mode is-active" id="mode-pdf" role="tab" aria-selected="true" aria-controls="panel-pdf">Upload a LionPATH PDF</button>
+        <button type="button" class="ga-mode" id="mode-manual" role="tab" aria-selected="false" aria-controls="panel-manual">Pick your courses</button>
       </div>
-      <details class="ga-paste">
-        <summary>PDF won&rsquo;t read? Paste the text instead</summary>
-        <label for="paste" class="ga-visually-hidden">Transcript text</label>
-        <textarea id="paste" rows="8" placeholder="Open the PDF, select all, copy, and paste here."></textarea>
-        <button type="button" id="use-paste" class="ga-btn ga-btn-secondary">Audit pasted text</button>
-      </details>
+
+      <div id="panel-pdf" role="tabpanel" aria-labelledby="mode-pdf">
+        <p>Either LionPATH document works:</p>
+        <ul>
+          <li><strong>Advising transcript:</strong> Student Home Base &rsaquo; Academic Records &rsaquo; View Advising Transcript, then save it as a PDF.</li>
+          <li><strong>Requirements report:</strong> Student Home Base &rsaquo; Degree Planning and Progress &rsaquo; My Academic Requirements &rsaquo; View Report as PDF.</li>
+        </ul>
+        <label class="ga-drop" id="drop">
+          <input type="file" id="file" accept="application/pdf,.pdf">
+          <span class="ga-drop-main">Choose the PDF or drop it here</span>
+          <span class="ga-drop-sub">PDF only &middot; read locally</span>
+        </label>
+        <div class="ga-actions">
+          <button type="button" id="try-sample" class="ga-btn ga-btn-secondary">Try a sample transcript</button>
+          <button type="button" id="try-sample-report" class="ga-btn ga-btn-secondary">Try a sample requirements report</button>
+          <span class="ga-link">Sample PDFs (made-up student): <a href="sample-transcript.pdf" download>transcript</a> &middot; <a href="sample-requirements-report.pdf" download>requirements report</a></span>
+        </div>
+        <details class="ga-paste">
+          <summary>PDF won&rsquo;t read? Paste the text instead</summary>
+          <label for="paste" class="ga-visually-hidden">Transcript text</label>
+          <textarea id="paste" rows="8" placeholder="Open the PDF, select all, copy, and paste here."></textarea>
+          <button type="button" id="use-paste" class="ga-btn ga-btn-secondary">Audit pasted text</button>
+        </details>
+      </div>
+
+      <div id="panel-manual" role="tabpanel" aria-labelledby="mode-manual" hidden>
+        <p>Rebuild your record by hand, semester by semester. The checklist runs from 1L Fall to your final Spring: the ten first-year courses are filled in for you, and under each later term you type a code or title (e.g. <em>LWREQ 934</em>, <em>Evidence</em>, <em>Immigration</em>) and click the course to add it, then set its credits and grade. &ldquo;C or better&rdquo; without the letter grade is enough for every requirement except the two GPA checks; letter grades, including 1L grades, can be entered on each row.</p>
+        <div class="ga-field-row">
+          <label for="start-year">I entered Penn State Law in</label>
+          <select id="start-year">
+            <option value="2024" selected>Fall 2024 (Class of 2027)</option>
+            <option value="2023">Fall 2023 (Class of 2026)</option>
+            <option value="2022">Fall 2022 (Class of 2025)</option>
+          </select>
+        </div>
+        <label class="ga-check">
+          <input type="checkbox" id="fy-done" checked>
+          I completed all ten first-year required courses (Fall and Spring, 32 credits).
+        </label>
+        <div class="ga-table-wrap"><table class="ga-table ga-picks" id="picks-table" aria-label="Your courses by semester"></table></div>
+        <details class="ga-paste">
+          <summary>Course not in the catalog (e.g. an older code, a visiting-away course)? Add it by code</summary>
+          <div class="ga-custom">
+            <label>Code <input type="text" id="custom-code" placeholder="LWELA 903" size="10"></label>
+            <label>Title <input type="text" id="custom-title" placeholder="Corporations" size="28"></label>
+            <label>Credits <input type="number" id="custom-credits" min="0.5" max="17" step="0.5" value="3" size="4"></label>
+            <label>Term <select id="custom-term"></select></label>
+            <button type="button" id="custom-add" class="ga-btn ga-btn-secondary">Add</button>
+          </div>
+        </details>
+        <datalist id="topic-list"></datalist>
+        <div class="ga-actions">
+          <button type="button" id="run-manual" class="ga-btn">Run the audit</button>
+          <button type="button" id="manual-sample" class="ga-btn ga-btn-secondary">Fill in the sample student</button>
+          <button type="button" id="manual-clear" class="ga-btn ga-btn-secondary">Clear</button>
+        </div>
+      </div>
+
       <label class="ga-check">
         <input type="checkbox" id="profdev">
         I completed the January 1L Professional Development program (it isn&rsquo;t on the transcript).
@@ -75,7 +122,7 @@
 
     <section class="ga-section" aria-labelledby="browser-h">
       <h2 id="browser-h">Course crosswalk: every PSDL course</h2>
-      <p>All <span id="catalog-count">current</span> Penn State Dickinson Law courses in the Penn State Bulletin, with the graduation requirements and University Park concentrations each one counts toward, and the semesters the course chart lists it. This is the mapping from new course codes to the old requirements.</p>
+      <p>All <span id="catalog-count">current</span> Penn State Dickinson Law courses in the Penn State Bulletin, with the graduation requirements and University Park concentrations each one counts toward, and the semesters the course chart lists it. This is the mapping from new course codes to the old requirements. &ldquo;ABA 303(c) &ndash; UP&rdquo; means the course is on the University Park 303(c) list for this cohort; &ldquo;&ndash; DL&rdquo; means it is only on the unified Dickinson Law list (see the key under the requirements table).</p>
       <label for="course-filter" class="ga-visually-hidden">Filter courses</label>
       <input type="search" id="course-filter" class="ga-filter" placeholder="Filter by code, title, requirement or concentration">
       <div class="ga-table-wrap"><table class="ga-table" id="catalog-table"></table></div>
@@ -88,8 +135,8 @@
       <h3>Judgment calls the written rules don&rsquo;t settle</h3>
       <ol id="assumptions" class="ga-assumptions"></ol>
       <h3 id="how-privacy">Checking the privacy claim</h3>
-      <p>Open your browser&rsquo;s developer tools (<kbd>F12</kbd> or <kbd>&#8984;&#8997;I</kbd>), choose the <strong>Network</strong> tab, then load a transcript. No requests appear. The page&rsquo;s security policy (<code>connect-src 'none'</code>) makes the browser refuse any connection the page might try.</p>
-      <p class="ga-disclaimer">Unofficial and for reference only. This page is a student-built aid, not a Penn State system; graduation certification is made by the law school registrar.</p>
+      <p>Open your browser&rsquo;s developer tools (<kbd>F12</kbd> or <kbd>&#8984;&#8997;I</kbd>), choose the <strong>Network</strong> tab, then load a transcript or run the course picker. No requests appear. The page&rsquo;s security policy (<code>connect-src 'none'</code>) makes the browser refuse any connection the page might try.</p>
+      <p class="ga-disclaimer">Unofficial and for reference only. This page is a student-built aid, not a Penn State system; graduation certification is made by the law school registrar (<a href="mailto:registrar@pennstatelaw.psu.edu">registrar@pennstatelaw.psu.edu</a>). No liability is accepted for its use.</p>
     </section>
 
   </div>

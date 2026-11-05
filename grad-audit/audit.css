@@ -28,7 +28,51 @@
 .ga-privacy h2 { font-size: 1.05rem; margin-bottom: .3rem; }
 .ga-privacy p { margin: 0; }
 
+/* Top-of-page disclaimer: the one thing every reader must see before the results. */
+.ga-disclaimer-top { background: var(--open-bg); border-left: 4px solid var(--open); padding: .9rem 1.1rem; margin-bottom: 1.2rem; border-radius: 0 6px 6px 0; }
+.ga-disclaimer-top h2 { font-size: 1.05rem; margin-bottom: .3rem; color: var(--open); }
+.ga-disclaimer-top p { margin: 0; }
+
 .ga-input, .ga-section { margin-bottom: 2.2rem; }
+
+/* Input mode switch (PDF vs. course picker) */
+.ga-modes { display: flex; gap: .4rem; margin: .2rem 0 1rem; border-bottom: 1px solid var(--border); }
+.ga-mode { font-family: var(--font-sans); font-size: .95rem; font-weight: 600; padding: .55rem 1rem; border: 1px solid transparent; border-bottom: 0;
+  background: transparent; color: var(--text-dim); cursor: pointer; border-radius: 6px 6px 0 0; margin-bottom: -1px; }
+.ga-mode:hover { color: var(--accent); }
+.ga-mode.is-active { background: var(--surface); border-color: var(--border); border-bottom: 1px solid var(--surface); color: var(--accent); }
+
+/* Course picker */
+.ga-field-row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .6rem 0; font-size: .95rem; }
+.ga-field-row select, .ga-custom input, .ga-custom select, #picks-table select, #picks-table input { font: inherit; font-size: .88rem; padding: .3rem .4rem; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); }
+/* Term-by-term checklist: one header row per semester, then its courses, then an "add" box. */
+.ga-picks .ga-term-row th { background: var(--info-bg); color: var(--info); text-transform: none; letter-spacing: 0; font-size: .9rem; position: static; }
+.ga-picks .ga-term-row.is-summer th { background: #f7f7f4; color: var(--text-muted); font-weight: 600; }
+.ga-picks tfoot th { background: #f7f7f4; text-transform: none; letter-spacing: 0; font-size: .9rem; position: static; }
+.ga-picks .ga-add-row td { padding: .4rem .7rem .6rem; background: #fcfcfa; }
+.ga-add-input { width: 100%; font: inherit; font-size: .88rem; padding: .4rem .6rem; border: 1px dashed var(--rule); border-radius: 6px; background: var(--surface); }
+.ga-add-input:focus { border-style: solid; border-color: var(--accent); outline: none; }
+.ga-results { list-style: none; margin: .3rem 0 0 !important; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); max-height: 16rem; overflow-y: auto; }
+.ga-results:empty { display: none; }
+.ga-results li { border-bottom: 1px solid #ecebe6; }
+.ga-results li:last-child { border-bottom: 0; }
+.ga-results button { width: 100%; text-align: left; font: inherit; font-size: .9rem; background: none; border: 0; padding: .5rem .8rem; cursor: pointer; display: flex; gap: .8rem; align-items: baseline; }
+.ga-results button:hover, .ga-results button:focus { background: #f0f3f7; }
+.ga-results .code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; color: var(--text-muted); min-width: 6.5rem; }
+.ga-results .credits { margin-left: auto; color: var(--text-muted); font-size: .8rem; white-space: nowrap; }
+#picks-table input[type="number"] { width: 4.5rem; }
+#picks-table input[type="text"] { width: 14rem; max-width: 100%; }
+#picks-table .ga-remove { font: inherit; font-size: .85rem; color: var(--open); background: none; border: 0; cursor: pointer; padding: .2rem .3rem; }
+#picks-table .ga-remove:hover { text-decoration: underline; }
+#picks-table tr.is-first-year td { background: #fafaf7; }
+.ga-custom { display: flex; flex-wrap: wrap; gap: .8rem; align-items: flex-end; margin: .6rem 0; font-size: .9rem; }
+.ga-custom label { display: flex; flex-direction: column; gap: .2rem; }
+
+/* Key under the requirements table (303(c) list sources, A13) */
+.ga-key { font-size: .85rem; color: var(--text-dim); margin: .6rem 0 0; }
+.ga-key dt { font-weight: 700; display: inline; }
+.ga-key dd { display: inline; margin: 0 0 0 .3rem; }
+.ga-key div { margin-bottom: .25rem; }
 
 .ga-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem;
   border: 2px dashed var(--rule); border-radius: 8px; background: var(--surface); padding: 1.6rem 1rem;
@@ -69,6 +113,7 @@
 .ga-pill.is-projected { background: var(--proj-bg); color: var(--proj); }
 .ga-pill.is-open { background: var(--open-bg); color: var(--open); }
 .ga-pill.is-info { background: var(--info-bg); color: var(--info); }
+.ga-pill.is-self { outline: 2px dashed currentColor; outline-offset: 1px; } /* rests on a self-reported grade (A12) */
 
 /* Tables */
 .ga-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }

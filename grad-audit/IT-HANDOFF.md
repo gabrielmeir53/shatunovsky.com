@@ -12,9 +12,13 @@ University Park J.D. students admitted **before Fall 2025** (the Class of 2027) 
 
 This folder contains:
 
-- a **static web page** that reads either of two LionPATH PDFs (the *Advising Transcript* or the *My Academic Requirements* report) and produces a corrected audit, a reference list of where LionPATH's audit differs and why, concentration progress and remaining-semester options;
+- a **static web page** that takes a student's record either from a LionPATH PDF (the *Advising Transcript* or the *My Academic Requirements* report) or from a **course picker** (the student selects the courses taken, by hand) and produces a corrected audit, a reference list of where LionPATH's audit differs and why, concentration progress and remaining-semester options;
 - a **course crosswalk** of all 202 current PSDL courses in the Bulletin, showing which requirement and concentrations each one counts toward;
 - **`rules.js`**, every rule as reviewable data with its source. It can serve directly as the specification for fixing the LionPATH requirement lines (Option A below).
+
+**Scope, stated once:** J.D. students admitted to **Penn State Law, University Park, before reunification** (before Fall 2025; the Class of 2027 is the last such cohort). The rules come from that cohort's checklist and flowchart, not from the unified requirements that apply from Fall 2025. The page says so at the top, together with a disclaimer that it is unofficial and that the Registrar's Office is the only authority.
+
+**Sources were re-verified on 11/04/2026** against the live Intranet pages (seminar list, both 303(c) pages, the pre-2025 UP flowchart), the public Degree Requirements page on dickinsonlaw.psu.edu, and LionPATH. The one data change that came out of it: the unified 303(c) page had gained *Trauma Informed Lawyering (Spring 2027)*, now in `data/intranet-lists.js`. LionPATH itself carries **no per-course 303(c) or experiential attribute** (Class Search › Class Information › Class Attributes reads "No Class Attributes" for LWELA 963 Con Law II and LWEXP 975 Litigation Skills), so the Intranet lists are the only machine-usable source for those two requirements.
 
 ## 2. Problem evidence
 
@@ -40,7 +44,7 @@ These are the changes, one per line. `rules.js` › `REQUIREMENTS[*].lionpath.fi
 
 1. **Upper Level Writing Seminar:** add `LWSEM` 900-level (all LWSEM courses) alongside AULWR/ULWR.
 2. **Professional Responsibility:** add `LWREQ 934` alongside PRORP 934.
-3. **ABA 303(c):** attach the Intranet 303(c) course list. Where a course has its own catalog number, use the course ID (the crosswalk on the page lists 33 catalog courses tagged 303(c)). For courses taught as Special Topics (`LWSEM 997`, `LWELA 997/999`, `LWEXP 997`), match on the topic. The full list is in `data/intranet-lists.js`.
+3. **ABA 303(c):** attach a 303(c) course list. The Intranet has **two**: the *ABA 303(c) Course Requirement – University Park* page (13 courses, written for "students admitted to Penn State Law, University Park in Fall 2023 and later (prior to reunification)", last updated 9/16/2025) and the unified *ABA Standard 303(c)* page (45 courses, 3/26/2026), a superset of the first. The registrar should say which governs this cohort; the page shows the result as **"Met – UP"** or **"Met – DL"** so students can see which list their course is on (assumption A13). Where a course has its own catalog number, use the course ID; for courses taught as Special Topics (`LWSEM 997`, `LWELA 997/999`, `LWEXP 997`), match on the topic. Both lists are in `data/intranet-lists.js` (`aba303c.universityPark` and `aba303c.courses`).
 4. **Required Experiential Learning Credits:** add `LWEXP`, `LWCLI` and `LWEXT` 900-level courses.
 5. Keep the no-double-counting rule: seminar, 303(c) and experiential must come from different courses, except that experiential credit beyond 6 may go to 303(c).
 
@@ -60,6 +64,8 @@ The page is static files with no server code. To move it:
 
 ## 4. Inputs
 
+Three ways in, one course-record shape out (`parser.js` `Course`), so `engine.js` never knows which was used.
+
 The parser detects which LionPATH document it was given (`parser.js` `detectFormat()`):
 
 | Document | Where students get it | How it's read |
@@ -67,17 +73,25 @@ The parser detects which LionPATH document it was given (`parser.js` `detectForm
 | Advising Transcript | Academic Records › View Advising Transcript | Single column; term headings ("Fall 2025") followed by course rows with attempted/earned/grade/points. |
 | Academic Requirements report (Oracle Analytics Publisher) | Degree Planning and Progress › My Academic Requirements › View Report as PDF | Two columns per page. Only the closing **Course History** table is read (Subject, Catalog #, Title, Units, Term, Grade, Type). It lists every course once, and it can run from the right column of one page into the left column of the next. The requirement tables above it are ignored: they repeat courses and reflect LionPATH's miscoded lines. Wrapped titles are rejoined using text positions, and "Course Topic: NN - Topic" loses its section number. |
 
-Both produce the same course records, and a test checks that the synthetic student gives identical audits from either PDF. Synthetic samples of both are included: `sample-transcript.pdf` and `sample-requirements-report.pdf`.
+Both produce the same course records, and a test checks that the synthetic student gives identical audits from either PDF. Synthetic samples of both are included: `sample-transcript.pdf` and `sample-requirements-report.pdf`. A real Class of 2027 advising transcript was run through the same pdf.js path on 11/04/2026 (locally, never committed): 26 courses, 5 terms, no warnings.
+
+**Course picker** (`manual.js`, the "Pick your courses" tab): for students without the PDF at hand, or when a LionPATH layout change breaks the parser.
+
+- The student chooses the entry year (Fall 2024 for the Class of 2027), ticks "I completed all ten first-year required courses" (adds the 1L block from `rules.js` `FIRST_YEAR_COURSES`, 32 credits), then searches the Bulletin catalog (`data/catalog.js`) and adds each upper-level course with its term, credits and grade. Special Topics numbers ask for the topic (A9), with a suggestion list built from the seminar/303(c) lists and the course chart. A course not in the catalog (an older code, a visiting-away course) can be added by code and title.
+- Grades: a letter grade, CR, W, "in progress / enrolled" (no grade yet), or the default **"Completed, C or better (grade not entered)"**, stored as the grade code `P` (`rules.js` `SELF_REPORTED_GRADE`). `P` satisfies every C-or-better rule and earns the credits **on the student's word** (A12). Every status that rests on a `P` grade is marked **"(self-reported)"** on its pill and carries a "Verify:" note, the banner counts them, and the course table spells the grade out. The two GPA checks (§10, A14) report "unknown" until letter grades are entered; the 1L grades can be added in a collapsed panel.
+- `manual.js` `buildManualCourses()` validates each row (code shape, term, credit range) and skips bad rows with a visible warning rather than counting half-filled rows. A test builds the synthetic student by hand and checks the audit matches the PDF-based one line for line.
 
 ## 5. Architecture
 
 ```
-  student's PDF ──► parser.js ──────────► engine.js ─────────────► app.js ──► page
-  (read locally     extractPdfPages()      runAudit()                 renders with
-   by the browser)  parsePdfPages()        describeCatalog()          textContent only
-                         ▲                     ▲
-                    vendor/pdf.js        rules.js + data/*.js
-                    (pinned 4.10.38)     (all rules and lists)
+  student's PDF ──► parser.js ──────────┐
+  (read locally     extractPdfPages()   │
+   by the browser)  parsePdfPages()     ├──► engine.js ─────────────► app.js ──► page
+                         ▲              │    runAudit()                 renders with
+                    vendor/pdf.js       │    describeCatalog()          textContent only
+                    (pinned 4.10.38)    │        ▲
+  course picker ──► manual.js ──────────┘   rules.js + data/*.js
+  (form on page)    buildManualCourses()    (all rules and lists)
 ```
 
 Everything runs in the browser. There is no build step: the files are plain ES modules you can read top to bottom.
@@ -102,11 +116,12 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 | `audit.css` | Page styles (incl. print) | Styling |
 | `app.js` | Only file that touches the DOM: file input → parse → audit → render | UI changes |
 | `parser.js` | LionPATH PDF (either format) or pasted text → course records | LionPATH changes either document's layout |
+| `manual.js` | Course picker rows → the same course records; 1L block, term list, catalog search list, topic suggestions | The picker's data shape changes |
 | `engine.js` | The audit: statuses, requirement checks, double-counting, residency, caps, concentrations, planner, crosswalk | Rule *logic* changes (rare) |
 | `match.js` | Title normalization used to join lists to the catalog | A new kind of spelling difference appears |
 | **`rules.js`** | **All requirements, sources, LionPATH observations, credit caps, title aliases, assumptions** | **Any rule or policy change** |
 | `data/catalog.js` | 202 courses from the Bulletin (generated) | Re-run `tools/build-catalog.mjs` |
-| `data/intranet-lists.js` | Seminar and 303(c) lists from the Intranet | The Intranet lists change |
+| `data/intranet-lists.js` | Seminar lists and both 303(c) lists (University Park page and unified page) from the Intranet | The Intranet lists change |
 | `data/concentrations.js` | 22 concentration course lists | The concentration PDF changes |
 | `data/course-chart.js` | FA25–SP27 anticipated offerings | A new course chart is published |
 | `sample.js`, `sample-transcript.pdf`, `sample-requirements-report.pdf` | Synthetic student in both formats, for demo and tests | Adding a test scenario |
@@ -124,7 +139,7 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 ## 9. Tests
 
 ```
-node --test grad-audit/test/engine.test.mjs       # 25 tests (+1 optional), Node 18+
+node --test grad-audit/test/engine.test.mjs       # 33 tests (+1 optional), Node 18+
 node grad-audit/tools/check-data.mjs              # data consistency
 ```
 
@@ -137,9 +152,14 @@ The tests cover:
 - the four miscoded requirements on the synthetic student;
 - first-year Criminal Procedure never counting for 303(c);
 - C- and CR handling for concentrations;
-- the no-double-counting cases (two seminars; an experiential course used for 303(c) only when it's excess);
-- the crosswalk (Employment Discrimination: 303(c) + 7 concentrations);
+- the no-double-counting cases (two seminars; an experiential course used for 303(c) only when it's excess, including Trauma Informed Lawyering);
+- the two 303(c) lists: the UP list is a subset of the unified list, and "via" is UP or DL accordingly;
+- the course picker: the 1L block, row validation, self-reported `P` grades (satisfy C-or-better rules, flagged, GPA unknown), and a by-hand rebuild of the sample student auditing identically to the PDF;
+- the GPA reconstruction, the 2.70 bar-skills condition and the good-standing rule;
+- the crosswalk (Employment Discrimination: 303(c) – UP + 7 concentrations; Election Law: 303(c) – DL);
 - the Bulletin parser.
+
+`check-data.mjs` also errors if the University Park 303(c) list ever stops being a subset of the unified list, or if `FIRST_YEAR_COURSES` and the 1L requirement lines disagree.
 
 ## 10. Assumptions (judgment calls the written rules don't settle)
 
@@ -158,10 +178,14 @@ The same list is in `rules.js` › `ASSUMPTIONS` and shown on the page under "Ho
 | A9 | Special Topics sections are matched by the topic printed on the transcript. | `engine.js` `courseTitleKeys()` |
 | A10 | Concentration "Additional Experiential Opportunities" (externships, moot court, …) need Associate Dean approval, so they are never counted automatically. | `engine.js` `scoreConcentrations()` |
 | A11 | W/F/incomplete earn nothing; a grade below C still earns credit toward 88 but doesn't satisfy C-or-better rules or concentrations. | `engine.js` `gradeMeets()` |
+| A12 | In the course picker, "completed, C or better" without a letter grade is stored as `P`: it satisfies C-or-better rules and earns credit on the student's word, and every status that rests on it is marked "(self-reported)". | `rules.js` `SELF_REPORTED_GRADE`, `engine.js` `gradeMeets()`, `manual.js` |
+| A13 | ABA 303(c): the University Park page (this cohort's) is the primary list; the unified Dickinson Law page is a superset. A course only on the unified page is counted and shown as "Met – DL" (vs "Met – UP"), with a key linking both pages. The registrar should say which list governs. | `rules.js` `aba303c.primaryList`, `engine.js` `eligibility()` |
+| A14 | GPA is reconstructed from letter grades on the 4.0 scale, weighted by credits; CR/P/W carry no points. The transcript's printed GPA is deliberately not read. The flowchart's two GPA rules (≤ 2.70 → Fundamental Skills for the Bar Exam required in the final spring; ≥ 2.0 cumulative after each semester except the first, ≤ 2 F's) are checked on that figure and shown as "Confirm" when grades are self-reported. **A reconstructed GPA within 0.05 of a threshold gets no verdict**: the line reads "Confirm" and tells the student to use the official LionPATH GPA, because rounding or a non-standard grade could put the reconstruction on the wrong side. These two lines are flowchart rules, not LionPATH audit lines, and the LionPATH column says so. | `rules.js` `GRADE_POINTS`, `nearMargin`; `engine.js` `gpaDetail()` |
 
 ## 11. Known limitations
 
 - **Document layouts.** The parser expects the current LionPATH *Advising Transcript* layout and the current *My Academic Requirements* PDF, whose Course History table must be present. A layout change shows up as visible "could not be read" warnings rather than silent omissions. A paste-text fallback exists, though without positions it can't rejoin wrapped report titles; codes still resolve through the catalog.
-- **Snapshots.** The catalog (Bulletin, 11/04/2026), Intranet lists (Oct 2026), concentrations (Oct 2026) and course chart (9/25/2026) are snapshots and need refreshing when the sources change (see §8).
+- **Snapshots.** The catalog (Bulletin, 11/04/2026), Intranet lists (re-checked 11/04/2026), concentrations (Oct 2026) and course chart (9/25/2026) are snapshots and need refreshing when the sources change (see §8).
+- **Self-reported records.** The course picker takes the student's word for which courses were taken and, unless letter grades are entered, that each was passed with a C or better. The page marks every such result; it cannot detect a misremembered course or grade.
 - **Not checkable from a transcript:** full tuition and the 20-hour work limit for residency, journal/moot court/mock trial caps, pass/fail elections, petitions approved by the Associate Dean, and transfer credit.
 - **Scope:** University Park J.D. students admitted before Fall 2025 only. Carlisle-admitted and post-2025 students have different requirements.
