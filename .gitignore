@@ -5,3 +5,5 @@ Thumbs.db
 .claude/
 node_modules/
 _site/
+# Editor backup copies (an editor keeps writing IT-HANDOFF.md.backup; never commit them)
+*.backup
