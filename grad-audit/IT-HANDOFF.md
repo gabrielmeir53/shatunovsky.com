@@ -14,7 +14,7 @@ This folder contains:
 
 - a **static web page** that takes a student's record either from a LionPATH PDF (the *Advising Transcript* or the *My Academic Requirements* report) or from a **course picker** (the student selects the courses taken, by hand) and produces a corrected audit, a reference list of where LionPATH's audit differs and why, concentration progress and remaining-semester options;
 - a **course crosswalk** of all 202 current PSDL courses in the Bulletin, showing which requirement and concentrations each one counts toward;
-- **`rules.js`**, every rule as reviewable data with its source. It can serve directly as the specification for fixing the LionPATH requirement lines (Option A below).
+- **`rules.js`**, every rule as reviewable data with its source (each source has a link; see §11). It can serve directly as the specification for fixing the LionPATH requirement lines (Option A below).
 
 **Scope, stated once:** J.D. students admitted to **Penn State Law, University Park, before reunification** (before Fall 2025; the Class of 2027 is the last such cohort). The rules come from that cohort's checklist and flowchart, not from the unified requirements that apply from Fall 2025. The page says so at the top, together with a disclaimer that it is unofficial and that the Registrar's Office is the only authority.
 
@@ -120,12 +120,13 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 | `engine.js` | The audit: statuses, requirement checks, double-counting, residency, caps, concentrations, planner, crosswalk | Rule *logic* changes (rare) |
 | `match.js` | Title normalization used to join lists to the catalog | A new kind of spelling difference appears |
 | **`rules.js`** | **All requirements, sources, LionPATH observations, credit caps, title aliases, assumptions** | **Any rule or policy change** |
-| `data/catalog.js` | 202 courses from the Bulletin (generated) | Re-run `tools/build-catalog.mjs` |
+| `data/catalog.js` | 202 courses from the current Bulletin (generated) | Re-run `tools/build-catalog.mjs` |
+| `data/legacy-catalog.js` | 245 pre-reunification Penn State Law courses (PSLFY, PRORP, ULWR, AULWR, EXPR, BAREX, …) from the archived 2024-25 Bulletin (generated). The engine falls back to it for codes the current Bulletin no longer lists, so a Class of 2027 transcript's 1L rows show their official titles instead of "CIVIL PROCEDURE"/"LEG RES TLS & STRT". | Should never change; re-run `tools/build-catalog.mjs legacy` only if the archive URL moves |
 | `data/intranet-lists.js` | Seminar lists and both 303(c) lists (University Park page and unified page) from the Intranet | The Intranet lists change |
 | `data/concentrations.js` | 22 concentration course lists | The concentration PDF changes |
 | `data/course-chart.js` | FA25–SP27 anticipated offerings | A new course chart is published |
 | `sample.js`, `sample-transcript.pdf`, `sample-requirements-report.pdf` | Synthetic student in both formats, for demo and tests | Adding a test scenario |
-| `tools/build-catalog.mjs` | Downloads the Bulletin's law subjects → `data/catalog.js` | Each semester |
+| `tools/build-catalog.mjs` | Downloads the Bulletin's law subjects → `data/catalog.js`, and the archived 2024-25 Penn State Law subjects → `data/legacy-catalog.js` (`current` / `legacy` argument runs one of them) | Each semester (current); never for legacy unless the archive moves |
 | `tools/check-data.mjs` | Consistency report for the data files | After any data edit |
 | `tools/make-sample-transcript.mjs` | Writes both sample PDFs from `sample.js` | After editing `sample.js` |
 | `test/engine.test.mjs` | Tests (Node's built-in runner, no packages) | With any logic change |
@@ -134,7 +135,7 @@ Everything runs in the browser. There is no build step: the files are plain ES m
 
 - **A requirement changes:** edit its entry in `rules.js` › `REQUIREMENTS`. Each entry declares how a course qualifies: `codes`, `subjects`, `catalogTag` (Bulletin description says so) or `list` (Intranet list).
 - **A list changes:** edit `data/intranet-lists.js` or `data/concentrations.js`, then run `node grad-audit/tools/check-data.mjs`. It lists any entry that doesn't match a catalog course: either a Special Topics or discontinued course (fine) or a typo or rename (add a `TITLE_ALIASES` entry with a `note`).
-- **New semester:** run `node grad-audit/tools/build-catalog.mjs`, review the `data/catalog.js` diff, update `data/course-chart.js`, then run the checks and tests.
+- **New semester:** run `node grad-audit/tools/build-catalog.mjs current`, review the `data/catalog.js` diff, update `data/course-chart.js`, then run the checks and tests. (`data/legacy-catalog.js` is a snapshot of a static archive; a diff after `build-catalog.mjs legacy` means the archive URL changed.)
 
 ## 9. Tests
 
@@ -182,7 +183,31 @@ The same list is in `rules.js` › `ASSUMPTIONS` and shown on the page under "Ho
 | A13 | ABA 303(c): the University Park page (this cohort's) is the primary list; the unified Dickinson Law page is a superset. A course only on the unified page is counted and shown as "Met – DL" (vs "Met – UP"), with a key linking both pages. The registrar should say which list governs. | `rules.js` `aba303c.primaryList`, `engine.js` `eligibility()` |
 | A14 | GPA is reconstructed from letter grades on the 4.0 scale, weighted by credits; CR/P/W carry no points. The transcript's printed GPA is deliberately not read. The flowchart's two GPA rules (≤ 2.70 → Fundamental Skills for the Bar Exam required in the final spring; ≥ 2.0 cumulative after each semester except the first, ≤ 2 F's) are checked on that figure and shown as "Confirm" when grades are self-reported. **A reconstructed GPA within 0.05 of a threshold gets no verdict**: the line reads "Confirm" and tells the student to use the official LionPATH GPA, because rounding or a non-standard grade could put the reconstruction on the wrong side. These two lines are flowchart rules, not LionPATH audit lines, and the LionPATH column says so. | `rules.js` `GRADE_POINTS`, `nearMargin`; `engine.js` `gpaDetail()` |
 
-## 11. Known limitations
+## 11. Sources, with links
+
+The same list, with the same keys, is `rules.js` › `SOURCES` and is rendered under "How this audit decides" on the page. Intranet links are on the Dickinson Law Intranet (SharePoint) and need a Penn State login; the rest are public. All were opened on 11/04/2026.
+
+| Key | Document | Link | Version seen |
+|---|---|---|---|
+| `checklist` | J.D. Degree Requirements Checklist, UP students admitted prior to FA2025 (PDF) | [JD Requirement Checklist-UP.pdf](https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/JD%20Requirement%20Checklist-UP.pdf?csf=1&web=1) | 10/20/2025 |
+| `flowchart` | Curriculum Flowchart - University Park Pre-2025 (PDF) | [Curriculum Flowchart - University Park Pre-2025.pdf](https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Open_To_All/Curriculum%20Flowchart%20-%20University%20Park%20Pre-2025.pdf?csf=1&web=1) | 9/24/2025 |
+| `publicPage` | Degree Requirements, "Penn State Law J.D. Requirements (Prior to Reunification)" | [dickinsonlaw.psu.edu/academics/jd-program/degree-requirements](https://dickinsonlaw.psu.edu/academics/jd-program/degree-requirements) | read 11/04/2026 |
+| `handbook` | Student Academic Handbook; UP Academic Handbook 2024-2025 (PDF) | [academic-handbook](https://dickinsonlaw.psu.edu/academic-handbook) · [UP_Academic_Handbook_2024-2025_FINAL.pdf](https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/UP_Academic_Handbook_2024-2025_FINAL.pdf?csf=1&web=1) | 2024-25 |
+| `seminarPage` | Seminar Courses | [Seminars.aspx](https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Seminars.aspx) | unchanged since Oct 2026 |
+| `aba303cUpPage` | ABA 303(c) Course Requirement - University Park | [ABA-303(c)-Course-Requirement---University-Park.aspx](https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/ABA-303(c)-Course-Requirement---University-Park.aspx) | 9/16/2025 |
+| `aba303cPage` | ABA Standard 303(c) - Civil Rights, Equal Protection and Social Justice Courses (unified) | [Civil-Rights,-Equal-Protection-and-Social-Justice-Courses.aspx](https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Civil-Rights,-Equal-Protection-and-Social-Justice-Courses.aspx) | 3/26/2026 |
+| `experientialPage` | Experiential Learning Courses (rule text per cohort and course lists by campus) | [Experiential-Learning-Skills-Courses.aspx](https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Experiential-Learning-Skills-Courses.aspx) | 9/16/2025 |
+| `concentrationsPdf` | Concentrations (University Park), admitted prior to Fall 2025 (PDF) | [Concentrations (University Park).pdf](https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/Concentrations%20(University%20Park).pdf?csf=1&web=1) | file 9/22/2026 |
+| `courseChart` | PSDL Course Chart, University Park (FA25-SP27) (PDF) | [PSDL Course Chart_University Park.pdf](https://pennstateoffice365.sharepoint.com/:b:/r/sites/DickinsonLawIntranet/Shared%20Documents/Student_Specific/PSDL%20Course%20Chart_University%20Park.pdf?csf=1&web=1) | 9/25/2026 |
+| `registrationPage` | Registration Information (hub: checklist, flowcharts, chart, 3L slides) | [Registration-Information.aspx](https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Registration-Information.aspx) | modified late Oct 2026 |
+| `academicAffairsPage` | Office of Academic Affairs (hub: handbook, lists, concentrations, petition form) | [Office-of-Academic-Affairs.aspx](https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Office-of-Academic-Affairs.aspx) | modified Aug 2026 |
+| `lionpath` | LionPATH degree audit and Class Search | [lionpath.psu.edu](https://lionpath.psu.edu/) | 11/04/2026 |
+| `bulletin` | Penn State Bulletin, Law course descriptions | [bulletins.psu.edu/university-course-descriptions/law/](https://bulletins.psu.edu/university-course-descriptions/law/) | snapshot in `data/catalog.js` |
+| `bulletinArchive` | Penn State Bulletin archive, 2024-25 edition, "Penn State Law" course descriptions (the last pre-reunification catalog: PSLFY, PRORP, ULWR, AULWR, EXPR, BAREX, …) | [bulletins.psu.edu/archive/2024-2025/university-course-descriptions/pennstatelaw/](https://bulletins.psu.edu/archive/2024-2025/university-course-descriptions/pennstatelaw/) | snapshot in `data/legacy-catalog.js` |
+
+Also seen but not used as a rule source: the Spring 2027 3L Registration Information and Advising Session slides (10/16/2026), linked from the Registration Information page; the unified PSDL Curriculum Flowchart (post-Fall 2025 students, out of scope); the Carlisle pre-2025 flowchart and checklist (out of scope).
+
+## 12. Known limitations
 
 - **Document layouts.** The parser expects the current LionPATH *Advising Transcript* layout and the current *My Academic Requirements* PDF, whose Course History table must be present. A layout change shows up as visible "could not be read" warnings rather than silent omissions. A paste-text fallback exists, though without positions it can't rejoin wrapped report titles; codes still resolve through the catalog.
 - **Snapshots.** The catalog (Bulletin, 11/04/2026), Intranet lists (re-checked 11/04/2026), concentrations (Oct 2026) and course chart (9/25/2026) are snapshots and need refreshing when the sources change (see §8).

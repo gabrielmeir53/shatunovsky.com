@@ -16,17 +16,18 @@
 // query string here so visitors load the new version at once. Not needed on a host without that
 // cache. Modules that import each other (engine.js → match.js) are unversioned inside; bump the
 // importer here when a dependency changes. See IT-HANDOFF.md §3 "Caching".
-import * as rules from "./rules.js?v=2";
+import * as rules from "./rules.js?v=4";
 import catalog from "./data/catalog.js";
-import lists from "./data/intranet-lists.js?v=2";
+import legacy from "./data/legacy-catalog.js";
+import lists from "./data/intranet-lists.js?v=3";
 import concentrations from "./data/concentrations.js";
 import chart from "./data/course-chart.js";
 import { parsePdfPages, parseAnyText, extractPdfPages } from "./parser.js?v=3";
-import { runAudit, describeCatalog, statusWord } from "./engine.js?v=2";
+import { runAudit, describeCatalog, statusWord } from "./engine.js?v=4";
 import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "./sample.js?v=3";
-import { gradeChoices, termList, firstYearPicks, pickableCourses, topicSuggestions, buildManualCourses } from "./manual.js?v=1";
+import { gradeChoices, termList, firstYearPicks, pickableCourses, topicSuggestions, buildManualCourses } from "./manual.js?v=2";
 
-const DATA = { rules, catalog, lists, concentrations, chart };
+const DATA = { rules, catalog, legacy, lists, concentrations, chart };
 
 // ---------------------------------------------------------------------------------------------
 // Tiny DOM helper. Children that are strings become TEXT nodes, never HTML.
@@ -283,7 +284,8 @@ function renderCourses(r, warnings, format) {
         h("td", { class: "small" }, c.term),
         h("td", { class: "code" }, c.code),
         h("td", {}, c.title, c.title !== c.description && !manual ? h("div", { class: "ga-muted small" }, `Transcript: ${c.description}`) : null,
-          !c.inCatalog ? h("div", { class: "ga-muted small" }, "Not in the current Bulletin") : null),
+          c.legacy ? h("div", { class: "ga-muted small" }, "Pre-reunification Penn State Law code; title from the 2024-25 Bulletin archive") : null,
+          !c.inCatalog ? h("div", { class: "ga-muted small" }, "Not in the current Bulletin or the 2024-25 Penn State Law archive; title as printed") : null),
         h("td", { class: "num" }, fmt(c.status === "done" || c.status === "withdrawn" ? c.earned : c.attempted)),
         h("td", {}, c.grade ? gradeText(c.grade) : h("span", { class: "ga-muted" }, statusWord(c.status))),
         h("td", { class: "small" }, (usedFor.get(c) ?? []).join(", "))))))));
@@ -323,7 +325,13 @@ function renderCatalog() {
 }
 
 function renderHow() {
-  $("sources").replaceChildren(...Object.values(rules.SOURCES).map((s) => h("li", {}, s)),
+  // Every source as a link (Intranet links need a Penn State login), with what was checked and when.
+  $("sources").replaceChildren(...Object.values(rules.SOURCES).map((s) =>
+    h("li", {},
+      h("a", { href: s.url, rel: "noopener" }, s.label),
+      s.url2 ? [" (", h("a", { href: s.url2, rel: "noopener" }, "Intranet PDF"), ")"] : null,
+      s.url.includes("sharepoint.com") || s.url2 ? h("span", { class: "ga-muted small" }, " · Penn State login") : null,
+      h("div", { class: "ga-muted small" }, s.note))),
     h("li", {}, `Course catalog snapshot: ${catalog.snapshot}`));
   $("assumptions").replaceChildren(...rules.ASSUMPTIONS.map((a) =>
     h("li", {}, h("strong", {}, `${a.id}. `), a.text, " ", h("span", { class: "where" }, `(${a.where})`))));
@@ -394,7 +402,7 @@ function addRow(term) {
       const hits = PICKABLE.filter((c) => c.search.includes(q)).slice(0, 25);
       const items = hits.map((c) => h("li", {},
         h("button", { type: "button", onclick: () => addPick(c, term) },
-          h("span", { class: "code" }, c.code), h("span", {}, c.title, c.specialTopics ? " (topic varies)" : ""), h("span", { class: "credits" }, `${c.credits} cr`))));
+          h("span", { class: "code" }, c.code), h("span", {}, c.title, c.specialTopics ? " (topic varies)" : "", c.legacy ? " (pre-2025 code)" : ""), h("span", { class: "credits" }, `${c.credits} cr`))));
       if (!items.length) items.push(h("li", {}, h("span", { class: "ga-muted small" }, "No match. Use \"Course not in the catalog\" below to add it by code.")));
       results.replaceChildren(...items); // replaceChildren() would print a bare null as text, so never pass one
     },

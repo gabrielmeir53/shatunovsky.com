@@ -218,9 +218,15 @@ function compare(a, b) {
  */
 export function runAudit(rawCourses, data, opts = {}) {
   const asOf = opts.asOf ?? new Date();
-  const { rules, catalog, lists: listData, concentrations, chart } = data;
+  const { rules, catalog, legacy, lists: listData, concentrations, chart } = data;
   const aliases = Object.fromEntries(rules.TITLE_ALIASES.map((a) => [normalizeTitle(a.from), normalizeTitle(a.to)]));
+  // Current Bulletin first; then the archived 2024-25 Penn State Law catalog for pre-reunification
+  // codes (PSLFY 1L courses, PRORP, ULWR, EXPR, BAREX…). A legacy entry never overrides a current one.
   const catalogByCode = new Map(catalog.courses.map((c) => [c.code, c]));
+  const legacyCodes = new Set();
+  for (const c of legacy?.courses ?? []) {
+    if (!catalogByCode.has(c.code)) { catalogByCode.set(c.code, c); legacyCodes.add(c.code); }
+  }
   const reqs = rules.REQUIREMENTS;
 
   // Requirement lists, indexed by title key.
@@ -240,7 +246,8 @@ export function runAudit(rawCourses, data, opts = {}) {
     c.credits = creditValue(c);
     c.title = displayTitle(c, catalogByCode, rules.SPECIAL_TOPICS_TITLE);
     c.titleKeys = courseTitleKeys(c, catalogByCode, aliases, rules.SPECIAL_TOPICS_TITLE);
-    c.inCatalog = catalogByCode.has(c.code);
+    c.inCatalog = catalogByCode.has(c.code); // current Bulletin or the 2024-25 Penn State Law archive
+    c.legacy = legacyCodes.has(c.code); // resolved through the archive (pre-reunification code)
     c.eligible = {}; // requirement id → reason string (or null)
     c.listVia = {}; // requirement id → "UP" | "DL" | null (which 303(c) list matched, A13)
     c.meets = {};
@@ -332,7 +339,7 @@ function evaluate(r, ctx) {
   // Anything the student should double-check: CR grades (A2) and self-reported "C or better" grades
   // from the course picker (A12). The page prints these next to the status pill.
   const verifyCR = (cs) => [
-    ...cs.filter((c) => c.grade === "CR").map((c) => `${c.code} has a CR grade (A2)`),
+    ...(r.crAllowed ? [] : cs.filter((c) => c.grade === "CR").map((c) => `${c.code} has a CR grade (A2)`)),
     ...cs.filter((c) => c.grade === "P").map((c) => `${c.code} grade is self-reported, not from a transcript (A12)`),
   ];
   const g = (n) => n.toFixed(2);

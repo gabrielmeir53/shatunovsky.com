@@ -15,6 +15,7 @@ import { readFileSync, existsSync } from "node:fs";
 
 import * as rules from "../rules.js";
 import catalog from "../data/catalog.js";
+import legacy from "../data/legacy-catalog.js";
 import lists from "../data/intranet-lists.js";
 import concentrations from "../data/concentrations.js";
 import chart from "../data/course-chart.js";
@@ -23,9 +24,9 @@ import { runAudit, assignExclusive, gradeMeets, courseStatus, describeCatalog } 
 import { normalizeTitle, titleKey, parseQualifiers } from "../match.js";
 import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "../sample.js";
 import * as manual from "../manual.js";
-import { parseSubjectPage } from "../tools/build-catalog.mjs";
+import { parseSubjectPage, parseSubjectIndex } from "../tools/build-catalog.mjs";
 
-const DATA = { rules, catalog, lists, concentrations, chart };
+const DATA = { rules, catalog, legacy, lists, concentrations, chart };
 const AS_OF = new Date(2026, 10, 4); // Nov 4, 2026: Fall 2026 in progress, Spring 2027 enrolled
 const sample = () => parseTranscriptText(sampleTranscriptLines().join("\n"));
 const auditSample = (opts = {}) => runAudit(sample().courses, DATA, { asOf: AS_OF, ...opts });
@@ -148,6 +149,25 @@ test("title normalization reconciles source spellings", () => {
   assert.notEqual(normalizeTitle("Family Law"), normalizeTitle("Family Law Clinic"));
   assert.notEqual(normalizeTitle("Contract Drafting"), normalizeTitle("Contract Drafting (M&A Focus)"));
   assert.equal(parseQualifiers("Criminal Procedure (LLMs Only)").llmOnly, true);
+});
+
+test("every source has a label, a link and a note; every requirement cites a source", () => {
+  for (const [k, s] of Object.entries(rules.SOURCES)) {
+    assert.ok(s.label && /^https:\/\//.test(s.url) && s.note, `SOURCES.${k}`);
+  }
+  for (const r of rules.REQUIREMENTS) assert.ok(rules.SOURCES[r.source], `${r.id} cites unknown source ${r.source}`);
+});
+
+test("experiential: a CR grade counts without a verify flag (Intranet page says Credit counts, A2)", () => {
+  const p = sample();
+  const courses = p.courses.map((c) => (c.code === "LWEXP 957" ? { ...c, grade: "CR" } : c));
+  const r = runAudit(courses, DATA, { asOf: AS_OF });
+  const exp = req(r, "experiential");
+  assert.ok(exp.courses.some((c) => c.code === "LWEXP 957"));
+  assert.equal(exp.verify.length, 0);
+  // but the same CR grade on the Professional Responsibility course is still flagged
+  const r2 = runAudit(p.courses.map((c) => (c.code === "LWREQ 934" ? { ...c, grade: "CR" } : c)), DATA, { asOf: AS_OF });
+  assert.ok(req(r2, "pr").verify.some((v) => /CR grade/.test(v)));
 });
 
 test("every title alias points at a real catalog course", () => {
@@ -390,6 +410,51 @@ test("GPA: within 0.05 of a threshold gives no verdict and points to the officia
   const gs = runAudit(onLine, DATA, { asOf: AS_OF });
   assert.equal(req(gs, "goodStanding").status, "confirm");
   assert.ok(req(gs, "goodStanding").verify.some((v) => /official GPA/.test(v)));
+});
+
+// ---------------------------------------------------------------- legacy (pre-reunification) codes
+test("legacy catalog: first-year PSLFY codes resolve to their official titles and credits", () => {
+  const r = auditSample();
+  const civ = r.courses.find((c) => c.code === "PSLFY 900");
+  assert.equal(civ.title, "Civil Procedure"); // transcript prints "CIVIL PROCEDURE"
+  assert.equal(civ.inCatalog, true);
+  assert.equal(civ.legacy, true);
+  assert.equal(r.courses.find((c) => c.code === "LWELA 903").legacy, false);
+  assert.equal(r.courses.find((c) => c.code === "LWELA 903").inCatalog, true);
+  // every checklist 1L course exists in the archive with the same credits
+  const byCode = new Map(legacy.courses.map((c) => [c.code, c]));
+  for (const c of [...rules.FIRST_YEAR_COURSES.fall, ...rules.FIRST_YEAR_COURSES.spring]) {
+    assert.equal(byCode.get(c.code)?.minCredits, c.credits, `${c.code} credits`);
+  }
+  // the old upper-level codes LionPATH's audit lines name are there too
+  for (const code of ["PRORP 934", "BAREX 900", "AULWR 997", "ULWR 997", "EXPR 937"]) assert.ok(byCode.has(code), code);
+  assert.ok(legacy.courses.length > 200);
+});
+
+test("legacy catalog: a current code is never shadowed by a legacy one; unknown codes stay unknown", () => {
+  const p = sample();
+  p.courses.push({ term: "Fall 2025", subject: "PRORP", number: "934", code: "PRORP 934", description: "Prof Resp", topic: null, attempted: 3, earned: 3, grade: "B", line: 98 });
+  p.courses.push({ term: "Fall 2025", subject: "ZZZZ", number: "999", code: "ZZZZ 999", description: "Mystery", topic: null, attempted: 1, earned: 1, grade: "B", line: 99 });
+  const r = runAudit(p.courses, DATA, { asOf: AS_OF });
+  const pr = r.courses.find((c) => c.code === "PRORP 934");
+  assert.equal(pr.title, "Professional Responsibility");
+  assert.equal(pr.legacy, true);
+  assert.ok(pr.eligible.pr); // the pr rule lists both PRORP 934 and LWREQ 934
+  const zz = r.courses.find((c) => c.code === "ZZZZ 999");
+  assert.equal(zz.inCatalog, false);
+  assert.equal(zz.title, "Mystery");
+  // the picker offers legacy codes, but not the PSLFY block (added separately)
+  const pick = manual.pickableCourses(DATA);
+  assert.ok(pick.some((c) => c.code === "PRORP 934" && c.legacy));
+  assert.ok(!pick.some((c) => c.subject === "PSLFY"));
+});
+
+test("catalog builder reads an archived subject index", () => {
+  const base = "https://bulletins.psu.edu/archive/2024-2025/university-course-descriptions/pennstatelaw/";
+  const html = `<a href="/archive/2024-2025/university-course-descriptions/pennstatelaw/pslfy/">x</a>
+    <a href="/archive/2024-2025/university-course-descriptions/pennstatelaw/prorp/">y</a>
+    <a href="/archive/2024-2025/university-course-descriptions/">index</a>`;
+  assert.deepEqual(parseSubjectIndex(html, base), ["prorp", "pslfy"]);
 });
 
 test("catalog parser reads a bulletin course block", () => {

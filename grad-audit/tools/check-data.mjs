@@ -16,6 +16,7 @@
  */
 import * as rules from "../rules.js";
 import catalog from "../data/catalog.js";
+import legacy from "../data/legacy-catalog.js";
 import lists from "../data/intranet-lists.js";
 import concentrations from "../data/concentrations.js";
 import chart from "../data/course-chart.js";
@@ -52,6 +53,16 @@ for (const r of rules.REQUIREMENTS) {
   const listed = new Set([...rules.FIRST_YEAR_COURSES.fall, ...rules.FIRST_YEAR_COURSES.spring].map((c) => c.code));
   for (const c of expected) if (!listed.has(c)) errors.push(`FIRST_YEAR_COURSES is missing ${c}`);
   for (const c of listed) if (!expected.has(c)) errors.push(`FIRST_YEAR_COURSES lists ${c}, which no 1L requirement expects`);
+  // …and each must exist in the archived 2024-25 catalog with the same credits (title/credit drift check).
+  const legacyByCode = new Map(legacy.courses.map((c) => [c.code, c]));
+  for (const c of [...rules.FIRST_YEAR_COURSES.fall, ...rules.FIRST_YEAR_COURSES.spring]) {
+    const l = legacyByCode.get(c.code);
+    if (!l) errors.push(`FIRST_YEAR_COURSES ${c.code} is not in data/legacy-catalog.js`);
+    else if (l.minCredits !== c.credits) errors.push(`FIRST_YEAR_COURSES ${c.code}: ${c.credits} credits here, ${l.credits} in the 2024-25 Bulletin archive`);
+  }
+  // Codes named by requirement rules must exist in one of the two catalogs.
+  const anyCode = new Set([...catalog.courses, ...legacy.courses].map((c) => c.code));
+  for (const r of rules.REQUIREMENTS) for (const code of r.codes ?? []) if (!anyCode.has(code)) errors.push(`Requirement ${r.id} names ${code}, which is in neither catalog`);
 }
 
 // Which list entries don't resolve to a catalog course?
@@ -66,9 +77,11 @@ for (const c of concentrations.concentrations) for (const e of [...c.courses, ..
 for (const e of lists.seminar.currentLWSEM) note("seminar list (current LWSEM)", e.title);
 for (const e of lists.aba303c.courses) note("303(c) list (unified)", e.title);
 for (const e of lists.aba303c.universityPark.courses) note("303(c) list (University Park)", e.title);
+for (const e of [...lists.experiential.clinics, ...lists.experiential.universityParkLWEXP]) note("experiential list (University Park)", e.title);
+for (const [k, s] of Object.entries(rules.SOURCES)) if (!s.label || !s.url || !s.note) errors.push(`SOURCES.${k} needs label, url and note`);
 for (const r of chart.rows) if (r.prefix !== "LWLLM") note(`course chart (${r.prefix})`, r.name);
 
-console.log(`Catalog: ${catalog.courses.length} courses, snapshot ${catalog.snapshot}`);
+console.log(`Catalog: ${catalog.courses.length} courses, snapshot ${catalog.snapshot}; legacy (2024-25 Penn State Law archive): ${legacy.courses.length} courses in ${Object.keys(legacy.subjects).length} subjects`);
 console.log(`Aliases: ${rules.TITLE_ALIASES.length}   Requirements: ${rules.REQUIREMENTS.length}   Concentrations: ${concentrations.concentrations.length}`);
 console.log(`\nList entries with no catalog course of their own (${unmatched.size}). Normal for Special Topics and`);
 console.log("discontinued courses, which match by the topic on a transcript; check for typos and renames:\n");
