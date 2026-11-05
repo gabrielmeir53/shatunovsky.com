@@ -22,6 +22,7 @@ import { parseTranscriptText, parsePdfPages, parseAnyText, parseReportLines, ite
 import { runAudit, assignExclusive, gradeMeets, courseStatus, describeCatalog } from "../engine.js";
 import { normalizeTitle, titleKey, parseQualifiers } from "../match.js";
 import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "../sample.js";
+import * as manual from "../manual.js";
 import { parseSubjectPage } from "../tools/build-catalog.mjs";
 
 const DATA = { rules, catalog, lists, concentrations, chart };
@@ -259,10 +260,136 @@ test("an experiential course may be the 303(c) course only if experiential still
 });
 
 // ---------------------------------------------------------------- crosswalk & catalog
-test("crosswalk: Employment Discrimination is 303(c) and on 7 concentration lists", () => {
+test("crosswalk: Employment Discrimination is 303(c) (UP list) and on 7 concentration lists", () => {
   const row = describeCatalog(DATA).find((c) => c.code === "LWELA 964");
-  assert.ok(row.requirements.includes("ABA 303(c)"));
+  assert.ok(row.requirements.includes("ABA 303(c) – UP"));
   assert.equal(row.concentrations.length, 7);
+  // Election Law is only on the unified Dickinson Law page (A13)
+  assert.ok(describeCatalog(DATA).find((c) => c.code === "LWELB 954").requirements.includes("ABA 303(c) – DL"));
+});
+
+// ---------------------------------------------------------------- 303(c): two Intranet lists (A13)
+test("303(c): the University Park list is a subset of the unified list, and each UP entry resolves", () => {
+  const aliases = Object.fromEntries(rules.TITLE_ALIASES.map((a) => [normalizeTitle(a.from), normalizeTitle(a.to)]));
+  const unified = new Set(lists.aba303c.courses.map((e) => titleKey(e.title, aliases)));
+  for (const e of lists.aba303c.universityPark.courses) assert.ok(unified.has(titleKey(e.title, aliases)), `not on unified list: ${e.title}`);
+  assert.equal(lists.aba303c.universityPark.courses.length, 14); // 13 courses + the non-law-electives line
+});
+
+test("303(c): via is UP for a UP-list course and DL for a unified-list-only course", () => {
+  // Sample student: Employment Discrimination (UP list, B, Spring 2026) wins over Election Law (DL only, in progress)
+  const r = auditSample();
+  assert.equal(req(r, "aba303c").via, "UP");
+  assert.equal(req(r, "aba303c").courses[0].code, "LWELA 964");
+  // Drop Employment Discrimination: Election Law (unified list only) is used and marked DL
+  const p = sample();
+  const r2 = runAudit(p.courses.filter((c) => c.code !== "LWELA 964"), DATA, { asOf: AS_OF });
+  assert.equal(req(r2, "aba303c").status, "projected");
+  assert.equal(req(r2, "aba303c").via, "DL");
+  assert.equal(req(r2, "aba303c").courses[0].code, "LWELB 954");
+});
+
+test("303(c): Trauma Informed Lawyering is experiential, so it is the 303(c) course only as excess experiential credit", () => {
+  const p = sample();
+  // Replace the sample's 303(c) courses (Employment Discrimination, Election Law, Con Law II) with the
+  // LWEXP 997 topic section; experiential already has 9 credits without it.
+  const courses = p.courses.filter((c) => !["LWELA 964", "LWELB 954", "LWELA 963"].includes(c.code));
+  courses.push({ term: "Spring 2027", subject: "LWEXP", number: "997", code: "LWEXP 997", description: "Special Topics", topic: "Trauma Informed Lawyering", attempted: 2, earned: 0, grade: null, line: 99 });
+  const r = runAudit(courses, DATA, { asOf: AS_OF });
+  assert.equal(req(r, "aba303c").courses[0]?.code, "LWEXP 997");
+  assert.equal(req(r, "aba303c").via, "DL");
+  assert.equal(req(r, "experiential").status, "projected"); // still ≥ 6 without it
+});
+
+// ---------------------------------------------------------------- manual course picker
+test("manual: first-year picks cover the ten PSLFY courses, 32 credits, two terms", () => {
+  const picks = manual.firstYearPicks(2024, rules);
+  assert.equal(picks.length, 10);
+  assert.equal(picks.reduce((n, p) => n + p.credits, 0), 32);
+  assert.deepEqual([...new Set(picks.map((p) => p.term))], ["Fall 2024", "Spring 2025"]);
+  assert.deepEqual(manual.termList(2024), ["Fall 2024", "Spring 2025", "Summer 2025", "Fall 2025", "Spring 2026", "Summer 2026", "Fall 2026", "Spring 2027"]);
+});
+
+test("manual: picks become Course records; bad rows are skipped with a warning", () => {
+  const b = manual.buildManualCourses([
+    { code: "LWREQ 934", title: "Professional Responsibility", term: "Fall 2025", credits: 3, grade: "P", topic: null },
+    { code: "LWSEM 997", title: "Special Topics", term: "Fall 2025", credits: 2, grade: "A-", topic: "Standards of Review" },
+    { code: "LWELA 918", title: "Remedies", term: "Spring 2027", credits: 3, grade: "", topic: null },
+    { code: "LWELA 955", title: "Evidence", term: "Spring 2026", credits: 3, grade: "W", topic: null },
+    { code: "bad", title: "Nonsense", term: "Spring 2026", credits: 3, grade: "B", topic: null },
+    { code: "LWELA 903", title: "Corporations", term: "", credits: 3, grade: "B", topic: null },
+  ]);
+  assert.equal(b.format, "manual");
+  assert.equal(b.courses.length, 4);
+  assert.equal(b.warnings.length, 2);
+  const [pr, sem, rem, ev] = b.courses;
+  assert.equal(pr.grade, "P"); assert.equal(pr.earned, 3);
+  assert.equal(sem.topic, "Standards of Review"); assert.equal(sem.code, "LWSEM 997");
+  assert.equal(rem.grade, null); assert.equal(rem.earned, 0); assert.equal(rem.attempted, 3);
+  assert.equal(ev.grade, "W"); assert.equal(ev.earned, 0);
+});
+
+test("manual: a self-reported P grade satisfies C-or-better rules but leaves the GPA unknown (A12, A14)", () => {
+  assert.equal(gradeMeets("P", "C", rules.GRADE_ORDER), true);
+  const picks = [
+    ...manual.firstYearPicks(2024, rules),
+    { code: "LWREQ 934", title: "Professional Responsibility", term: "Fall 2025", credits: 3, grade: "P", topic: null },
+    { code: "LWELA 965", title: "Immigration Law", term: "Spring 2026", credits: 3, grade: "P", topic: null },
+  ];
+  const r = runAudit(manual.buildManualCourses(picks).courses, DATA, { asOf: AS_OF });
+  assert.equal(req(r, "core1lFall").status, "met");
+  assert.equal(req(r, "core1lSpring").status, "met");
+  assert.equal(req(r, "pr").status, "met");
+  assert.equal(req(r, "aba303c").status, "met");
+  assert.equal(req(r, "aba303c").via, "UP");
+  assert.equal(r.gpa.gpa, null);
+  assert.equal(req(r, "gpaBarSkills").status, "confirm");
+  assert.equal(req(r, "goodStanding").status, "confirm");
+  // Every status that rests on a P grade carries a visible "self-reported" verify note
+  for (const id of ["pr", "aba303c", "core1lFall", "core1lSpring"]) assert.ok(req(r, id).verify.some((v) => /self-reported/.test(v)), `${id} should say self-reported`);
+});
+
+test("manual: the same record built by hand audits like the sample transcript", () => {
+  const picks = SAMPLE_TERMS.flatMap(([term, rows]) =>
+    rows.map(([subject, number, description, attempted, , grade, topic]) =>
+      ({ code: `${subject} ${number}`, title: description, term, credits: attempted, grade: grade ?? "", topic: topic ?? null })));
+  const byHand = runAudit(manual.buildManualCourses(picks).courses, DATA, { asOf: AS_OF });
+  const fromPdf = auditSample();
+  assert.deepEqual(byHand.requirements.map((q) => [q.requirement.id, q.status]), fromPdf.requirements.map((q) => [q.requirement.id, q.status]));
+  assert.equal(byHand.totals.projected, fromPdf.totals.projected);
+});
+
+// ---------------------------------------------------------------- GPA-based lines (flowchart)
+test("GPA: reconstructed from letter grades; bar-skills condition and good standing", () => {
+  const r = auditSample();
+  assert.ok(r.gpa.gpa > 2.7 && r.gpa.gpa < 4, `sample GPA ${r.gpa.gpa}`);
+  assert.equal(r.gpa.unknown, 1); // the CR course
+  assert.equal(req(r, "gpaBarSkills").status, "met");
+  assert.equal(req(r, "goodStanding").status, "met");
+  // A weak record: C- everywhere → GPA 1.67: bar skills required (open without LWELB 900), standing open
+  const weak = sample().courses.map((c) => (c.grade && c.grade !== "W" && c.grade !== "CR" ? { ...c, grade: "C-" } : c));
+  const w = runAudit(weak, DATA, { asOf: AS_OF });
+  assert.equal(req(w, "gpaBarSkills").status, "projected"); // LWELB 900 is enrolled for Spring 2027 in the sample
+  assert.equal(req(w, "goodStanding").status, "open");
+  const w2 = runAudit(weak.filter((c) => c.code !== "LWELB 900"), DATA, { asOf: AS_OF });
+  assert.equal(req(w2, "gpaBarSkills").status, "open");
+});
+
+test("GPA: within 0.05 of a threshold gives no verdict and points to the official figure (A14)", () => {
+  // All graded courses at B- (2.67): reconstructed GPA 2.67, within 0.05 of 2.70.
+  const nearRecord = sample().courses.map((c) => (c.grade && c.grade !== "W" && c.grade !== "CR" ? { ...c, grade: "B-" } : c));
+  const withBar = runAudit(nearRecord, DATA, { asOf: AS_OF });
+  assert.ok(Math.abs(withBar.gpa.gpa - 2.67) < 0.01);
+  assert.equal(req(withBar, "gpaBarSkills").status, "projected"); // LWELB 900 enrolled covers it either way
+  assert.ok(req(withBar, "gpaBarSkills").verify.some((v) => /official GPA/.test(v)));
+  const noBar = runAudit(nearRecord.filter((c) => c.code !== "LWELB 900"), DATA, { asOf: AS_OF });
+  assert.equal(req(noBar, "gpaBarSkills").status, "confirm");
+  assert.ok(req(noBar, "gpaBarSkills").verify.some((v) => /official GPA/.test(v)));
+  // Good standing: all C (2.00) sits exactly on the 2.0 line → confirm, not met
+  const onLine = sample().courses.map((c) => (c.grade && c.grade !== "W" && c.grade !== "CR" ? { ...c, grade: "C" } : c));
+  const gs = runAudit(onLine, DATA, { asOf: AS_OF });
+  assert.equal(req(gs, "goodStanding").status, "confirm");
+  assert.ok(req(gs, "goodStanding").verify.some((v) => /official GPA/.test(v)));
 });
 
 test("catalog parser reads a bulletin course block", () => {

@@ -54,6 +54,7 @@ export function courseStatus(c, asOf) {
 export function gradeMeets(grade, minGrade, gradeOrder) {
   if (grade == null) return "pending";
   if (grade === "CR") return true;
+  if (grade === "P") return true; // self-reported "C or better" from the manual picker (ASSUMPTION A12)
   const g = gradeOrder.indexOf(grade);
   const m = gradeOrder.indexOf(minGrade);
   return g !== -1 && m !== -1 && g <= m && grade !== "F";
@@ -98,16 +99,61 @@ function displayTitle(c, catalogByCode, specialTopicsRe) {
 /**
  * Which exclusive requirements (seminar / 303(c) / experiential) a course is ELIGIBLE for, by the
  * rules in rules.js — before deciding which one it is actually used for.
+ *
+ * @returns {{reason:string, via:string|null}|null}
+ *   reason: human-readable basis ("subject LWSEM", "Intranet list: …")
+ *   via:    which list matched when the rule has a `primaryList` (ASSUMPTION A13):
+ *             "UP" = the cohort's University Park list, "DL" = only the unified Dickinson Law list.
+ *           null for rules without a primary list.
  */
 function eligibility(c, req, lists, catalogByCode, firstYearSubjects) {
-  if (req.codes && req.codes.includes(c.code)) return `course ${c.code}`;
-  if (req.subjects && req.subjects.includes(c.subject)) return `subject ${c.subject}`;
-  if (req.catalogTag && catalogByCode.get(c.code)?.tags.includes(req.catalogTag)) return "Bulletin description";
+  if (req.codes && req.codes.includes(c.code)) return { reason: `course ${c.code}`, via: null };
+  if (req.subjects && req.subjects.includes(c.subject)) return { reason: `subject ${c.subject}`, via: null };
+  if (req.catalogTag && catalogByCode.get(c.code)?.tags.includes(req.catalogTag)) return { reason: "Bulletin description", via: null };
   if (req.list) {
     if (req.excludeFirstYear && firstYearSubjects.includes(c.subject)) return null; // A4
-    for (const k of c.titleKeys) if (lists[req.list].has(k)) return `Intranet list: "${lists[req.list].get(k)}"`;
+    if (req.primaryList) {
+      for (const k of c.titleKeys) if (lists[req.primaryList].has(k)) return { reason: `University Park 303(c) list: "${lists[req.primaryList].get(k)}"`, via: "UP" };
+    }
+    for (const k of c.titleKeys) {
+      if (lists[req.list].has(k)) {
+        return req.primaryList
+          ? { reason: `unified Dickinson Law 303(c) list only: "${lists[req.list].get(k)}"`, via: "DL" }
+          : { reason: `Intranet list: "${lists[req.list].get(k)}"`, via: null };
+      }
+    }
   }
   return null;
+}
+
+/**
+ * GPA reconstruction (ASSUMPTION A14). Letter-graded courses only, weighted by credits attempted.
+ * Also the cumulative GPA after each graded fall/spring term (for the good-standing rule) and the
+ * number of F grades.
+ * @returns {{gpa:number|null, units:number, unknown:number, fails:number, byTerm:Array<{term:string, cumulative:number}>}}
+ *   unknown = graded courses whose grade has no point value (P, CR): with any of these the GPA is
+ *   only partial, and with P grades present it is reported as unknown.
+ */
+export function gpaDetail(courses, gradePoints) {
+  const graded = courses.filter((c) => c.status === "done");
+  let points = 0, units = 0, unknown = 0, fails = 0;
+  const byTerm = [];
+  const terms = [...new Set(graded.map((c) => c.term))].filter((t) => /^(Fall|Spring) /.test(t)).sort((a, b) => termOrder(a) - termOrder(b));
+  for (const term of terms) {
+    for (const c of graded.filter((c) => c.term === term)) {
+      if (c.grade === "F") fails++;
+      if (c.grade in gradePoints) { points += gradePoints[c.grade] * c.attempted; units += c.attempted; }
+      else unknown++;
+    }
+    if (units > 0) byTerm.push({ term, cumulative: points / units });
+  }
+  for (const c of graded.filter((c) => !/^(Fall|Spring) /.test(c.term))) {
+    if (c.grade === "F") fails++;
+    if (c.grade in gradePoints) { points += gradePoints[c.grade] * c.attempted; units += c.attempted; }
+    else unknown++;
+  }
+  const selfReported = graded.some((c) => c.grade === "P");
+  return { gpa: units > 0 && !selfReported ? points / units : null, units, unknown, fails, byTerm, selfReported };
 }
 
 /**
@@ -184,6 +230,7 @@ export function runAudit(rawCourses, data, opts = {}) {
       aliases,
     ),
     aba303c: indexEntries(listData.aba303c.courses.map((e) => e.title), aliases),
+    aba303cUP: indexEntries(listData.aba303c.universityPark.courses.map((e) => e.title), aliases),
   };
 
   // 1. Normalize courses: status, credits, title keys, eligibility, grade checks.
@@ -194,10 +241,13 @@ export function runAudit(rawCourses, data, opts = {}) {
     c.title = displayTitle(c, catalogByCode, rules.SPECIAL_TOPICS_TITLE);
     c.titleKeys = courseTitleKeys(c, catalogByCode, aliases, rules.SPECIAL_TOPICS_TITLE);
     c.inCatalog = catalogByCode.has(c.code);
-    c.eligible = {};
+    c.eligible = {}; // requirement id → reason string (or null)
+    c.listVia = {}; // requirement id → "UP" | "DL" | null (which 303(c) list matched, A13)
     c.meets = {};
     for (const r of reqs.filter((r) => r.kind === "oneCourse" || r.kind === "credits")) {
-      c.eligible[r.id] = c.status === "withdrawn" ? null : eligibility(c, r, lists, catalogByCode, rules.FIRST_YEAR_SUBJECTS);
+      const e = c.status === "withdrawn" ? null : eligibility(c, r, lists, catalogByCode, rules.FIRST_YEAR_SUBJECTS);
+      c.eligible[r.id] = e?.reason ?? null;
+      c.listVia[r.id] = e?.via ?? null;
       c.meets[r.id] = gradeMeets(c.grade, r.minGrade, rules.GRADE_ORDER);
     }
     return c;
@@ -209,7 +259,8 @@ export function runAudit(rawCourses, data, opts = {}) {
   // 3. Evaluate each requirement.
   const projectedTotal = courses.reduce((n, c) => n + c.credits, 0);
   const earnedTotal = courses.filter((c) => c.status === "done").reduce((n, c) => n + c.credits, 0);
-  const results = reqs.map((r) => evaluate(r, { courses, assignment, earnedTotal, projectedTotal, opts, rules }));
+  const gpa = gpaDetail(courses, rules.GRADE_POINTS);
+  const results = reqs.map((r) => evaluate(r, { courses, assignment, earnedTotal, projectedTotal, opts, rules, gpa }));
 
   // 4. LionPATH discrepancies: requirement lines LionPATH can't satisfy (rules.js `lionpath`) for which
   //    this audit finds qualifying courses. For a credit requirement that includes a partial count
@@ -247,6 +298,7 @@ export function runAudit(rawCourses, data, opts = {}) {
     asOf,
     overall: { ...overall, lastTerm },
     totals: { earned: earnedTotal, projected: projectedTotal, inProgress: sumBy(courses, "inProgress"), enrolled: sumBy(courses, "enrolled") },
+    gpa,
     requirements: results,
     auditErrors,
     residency,
@@ -266,16 +318,24 @@ export function statusWord(s) {
 }
 
 /**
- * Evaluate one requirement. Returns { requirement, status, courses, detail, verify }.
+ * Evaluate one requirement. Returns { requirement, status, courses, detail, verify, via }.
  *   status: "met"       — satisfied by completed courses with qualifying grades
  *           "projected" — will be satisfied if in-progress/enrolled courses finish with C or better
  *           "open"      — not satisfied even counting in-progress/enrolled courses
- *           "confirm"   — needs the student's confirmation (attestation)
+ *           "confirm"   — needs the student's confirmation (attestation), or letter grades (GPA lines)
+ *   via:    for 303(c): "UP" (cohort's University Park list) or "DL" (unified Dickinson Law list
+ *           only), shown on the page as "Met – UP" / "Met – DL" (A13); otherwise null.
  */
 function evaluate(r, ctx) {
-  const { courses, assignment, earnedTotal, projectedTotal, opts } = ctx;
-  const base = { requirement: r, courses: [], detail: "", verify: [] };
-  const verifyCR = (cs) => cs.filter((c) => c.grade === "CR").map((c) => `${c.code} has a CR grade (A2)`);
+  const { courses, assignment, earnedTotal, projectedTotal, opts, gpa } = ctx;
+  const base = { requirement: r, courses: [], detail: "", verify: [], via: null };
+  // Anything the student should double-check: CR grades (A2) and self-reported "C or better" grades
+  // from the course picker (A12). The page prints these next to the status pill.
+  const verifyCR = (cs) => [
+    ...cs.filter((c) => c.grade === "CR").map((c) => `${c.code} has a CR grade (A2)`),
+    ...cs.filter((c) => c.grade === "P").map((c) => `${c.code} grade is self-reported, not from a transcript (A12)`),
+  ];
+  const g = (n) => n.toFixed(2);
 
   switch (r.kind) {
     case "totalCredits": {
@@ -297,6 +357,7 @@ function evaluate(r, ctx) {
         courses: got,
         status: missing.length ? "open" : allDone ? "met" : "projected",
         detail: missing.length ? `Missing: ${missing.join(", ")}` : `${got.length} of ${r.codes.length} courses`,
+        verify: got.some((c) => c.grade === "P") ? [`${got.filter((c) => c.grade === "P").length} of these grades are self-reported (A12)`] : [],
       };
     }
     case "oneCourse": {
@@ -313,6 +374,7 @@ function evaluate(r, ctx) {
         status: c.meets[r.id] === true ? "met" : "projected",
         detail: `${c.code} ${c.title}: qualifies by ${c.eligible[r.id]}`,
         verify: verifyCR([c]),
+        via: c.listVia[r.id],
       };
     }
     case "credits": {
@@ -329,6 +391,46 @@ function evaluate(r, ctx) {
     }
     case "attestation":
       return { ...base, status: opts.profDevConfirmed ? "met" : "confirm", detail: r.detail };
+    case "gpaCondition": {
+      // GPA above the threshold: nothing to do. At or below it: the named course must be on the
+      // record (done, in progress or enrolled); otherwise open. Unknown GPA (self-reported grades,
+      // or nothing graded yet): ask for letter grades.
+      if (gpa.gpa == null) {
+        return { ...base, status: "confirm", detail: gpa.selfReported ? "GPA unknown: enter letter grades in the course picker to check this." : "No letter grades yet." };
+      }
+      // Near the threshold the reconstruction can't be trusted to the hundredth (A14): no verdict
+      // unless the course is on the record anyway, and always a pointer to the official figure.
+      const near = Math.abs(gpa.gpa - r.threshold) <= (r.nearMargin ?? 0);
+      const nearNote = `reconstructed GPA ${g(gpa.gpa)} is within ${r.nearMargin} of ${g(r.threshold)}; use the official GPA on your LionPATH transcript to decide this (A14)`;
+      const bar = courses.find((c) => r.codes.includes(c.code) && c.status !== "withdrawn");
+      if (!near && gpa.gpa > r.threshold) return { ...base, status: "met", detail: `GPA ${g(gpa.gpa)} is above ${g(r.threshold)}, so the course is not required. ${r.detail}` };
+      if (bar) {
+        // At or below the threshold, or too close to tell: the course on the record settles it.
+        return { ...base, courses: [bar], status: bar.status === "done" && bar.earned > 0 ? "met" : "projected",
+          detail: `GPA ${g(gpa.gpa)} reconstructed; ${bar.code} ${bar.title} (${statusWord(bar.status)}, ${bar.term}) covers the condition either way.`, verify: near ? [nearNote] : [] };
+      }
+      if (near) return { ...base, status: "confirm", detail: `GPA ${g(gpa.gpa)} is too close to ${g(r.threshold)} to call from a reconstruction.`, verify: [nearNote] };
+      return { ...base, status: "open", detail: `GPA ${g(gpa.gpa)} is ${g(r.threshold)} or below: ${r.codes[0]} is required in the final spring semester and is not on the record.` };
+    }
+    case "gpaMinimum": {
+      if (gpa.gpa == null) {
+        return { ...base, status: "confirm", detail: gpa.selfReported ? "GPA unknown: enter letter grades in the course picker to check this." : "No letter grades yet." };
+      }
+      // "except for the first semester of the first year": skip the first graded term.
+      const low = gpa.byTerm.slice(1).filter((t) => t.cumulative < r.minGpa);
+      const near = gpa.byTerm.slice(1).filter((t) => t.cumulative >= r.minGpa && t.cumulative - r.minGpa <= (r.nearMargin ?? 0));
+      const problems = [];
+      if (low.length) problems.push(`cumulative GPA below ${g(r.minGpa)} after ${low.map((t) => `${t.term} (${g(t.cumulative)})`).join(", ")}`);
+      if (gpa.fails > r.maxFails) problems.push(`${gpa.fails} F grades (more than ${r.maxFails})`);
+      // A reconstructed GPA just above 2.0 can't be trusted to the hundredth (A14): no verdict.
+      const verify = near.length ? [`reconstructed cumulative GPA within ${r.nearMargin} of ${g(r.minGpa)} after ${near.map((t) => `${t.term} (${g(t.cumulative)})`).join(", ")}; use the official GPA on your LionPATH transcript (A14)`] : [];
+      return {
+        ...base,
+        status: problems.length ? "open" : near.length ? "confirm" : "met",
+        detail: problems.length ? problems.join("; ") : `Cumulative GPA ${g(gpa.gpa)}; ${gpa.fails} F grade${gpa.fails === 1 ? "" : "s"}. ${gpa.unknown ? `${gpa.unknown} CR course(s) carry no points.` : ""}`.trim(),
+        verify,
+      };
+    }
     default:
       throw new Error(`Unknown requirement kind "${r.kind}" in rules.js (${r.id})`);
   }
@@ -426,7 +528,11 @@ function planNext(courses, results, conc, concData, chart, catalogByCode, aliase
     const cat = keys.map((k) => titleToCatalog.get(k)).find(Boolean);
     const reasons = [];
     if (openReqs.includes("seminar") && (row.prefix === "LWSEM" || keys.some((k) => lists.seminar.has(k)))) reasons.push("Writing seminar");
-    if (openReqs.includes("aba303c") && keys.some((k) => lists.aba303c.has(k))) reasons.push("ABA 303(c)");
+    if (openReqs.includes("aba303c")) {
+      // A13: say which list the course is on, the same way the requirement table does.
+      if (keys.some((k) => lists.aba303cUP.has(k))) reasons.push("ABA 303(c) – UP list");
+      else if (keys.some((k) => lists.aba303c.has(k))) reasons.push("ABA 303(c) – DL list only");
+    }
     if (openReqs.includes("experiential") && ["LWEXP", "LWCLI", "LWEXT"].includes(row.prefix)) reasons.push("Experiential");
     for (const { c, idx } of nearIndexes) if (keys.some((k) => idx.has(k))) reasons.push(`${c.name} (needs ${c.needed})`);
     if (reasons.length) suggestions.push({ prefix: row.prefix, name: row.name, terms, credits: cat?.credits ?? "?", code: cat?.code ?? null, clinic: row.prefix === "LWCLI", temporary: row.temporary, reasons });
@@ -450,6 +556,7 @@ export function describeCatalog(data) {
     aliases,
   );
   const aba = indexEntries(listData.aba303c.courses.map((e) => e.title), aliases);
+  const abaUP = indexEntries(listData.aba303c.universityPark.courses.map((e) => e.title), aliases);
   const concIdx = concentrations.concentrations.map((c) => ({ name: c.name, idx: indexEntries([...c.courses, ...c.clinics], aliases) }));
   const CHART_TERMS = { FA25: "Fall 2025", SP26: "Spring 2026", FA26: "Fall 2026", SP27: "Spring 2027" };
   const offered = new Map();
@@ -464,7 +571,9 @@ export function describeCatalog(data) {
     if (pr.codes.includes(c.code)) requirements.push("Professional Responsibility");
     if (sem.subjects.includes(c.subject) || c.tags.includes("seminar") || (!specialTopics && seminar.has(key))) requirements.push("Writing seminar");
     if (exp.subjects.includes(c.subject) || c.tags.includes("experiential")) requirements.push("Experiential");
-    if (!specialTopics && aba.has(key)) requirements.push("ABA 303(c)");
+    // A13: "– UP" = on the cohort's University Park list; "– DL" = only on the unified list.
+    if (!specialTopics && abaUP.has(key)) requirements.push("ABA 303(c) – UP");
+    else if (!specialTopics && aba.has(key)) requirements.push("ABA 303(c) – DL");
     return {
       code: c.code,
       title: c.title,

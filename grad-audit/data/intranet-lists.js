@@ -8,7 +8,7 @@
  * `note`. To update: re-copy the page text into these arrays.
  */
 export default {
- "_readme": "Requirement course lists maintained by the law school on the Dickinson Law Intranet (SharePoint), copied October 2026. Titles are verbatim; a parenthetical qualifier is split into 'note'.",
+ "_readme": "Requirement course lists maintained by the law school on the Dickinson Law Intranet (SharePoint), copied October 2026 and re-checked against the live pages on 2026-11-04. Titles are verbatim; a parenthetical qualifier is split into 'note'.",
  "seminar": {
   "source": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Seminars.aspx",
   "rule": "All students must complete with a grade of at least C one course designated as a seminar course.",
@@ -274,15 +274,39 @@ export default {
   ]
  },
  "aba303c": {
+  "_readme": "Two lists. 'universityPark' is the page written for this cohort (students admitted to Penn State Law, University Park, Fall 2023 and later, prior to reunification) and is the PRIMARY list (rules.js A13). 'courses' is the unified Dickinson Law page, a superset of it; a course found only there is counted but flagged for the registrar. Both pages were re-read on 2026-11-04.",
   "source": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Civil-Rights,-Equal-Protection-and-Social-Justice-Courses.aspx",
   "lastUpdated": "2026-03-26",
   "rule": "All students must complete with a grade of at least C one course beyond the first-year required courses designated as focused on civil rights, equal protection, or social justice.",
+  "universityPark": {
+   "source": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/ABA-303(c)-Course-Requirement---University-Park.aspx",
+   "lastUpdated": "2025-09-16",
+   "scope": "Students admitted to Penn State Law, University Park in Fall 2023 and later (prior to reunification)",
+   "rule": "Students admitted to Penn State Law, University Park in Fall 2023 and later (prior to reunification) must complete with a grade of at least C or better, at least one of the following courses as a graduation requirement.",
+   "courses": [
+    { "title": "Asylum and Refugee Law" },
+    { "title": "Children & the Law" },
+    { "title": "Comparative Constitutional Law Seminar" },
+    { "title": "Equal Protection & Civil Rights" },
+    { "title": "Family Law" },
+    { "title": "Higher Education Law Practice" },
+    { "title": "Human Rights, Intersectionality, & the Law" },
+    { "title": "Law & (In)equity" },
+    { "title": "Law and Sexuality" },
+    { "title": "Employment Discrimination" },
+    { "title": "Immigration Law" },
+    { "title": "International Human Rights Seminar" },
+    { "title": "Minority Business Ownership" },
+    { "title": "selected non-law electives with Associate Dean approval" }
+   ]
+  },
   "courses": [
    {
     "title": "Advanced Criminal Procedure"
    },
    {
-    "title": "Access to Justice and Equity Seminar"
+    "title": "Access to Justice and Equity Seminar",
+    "note": "University Park offered Spring 2026 & Spring 2027"
    },
    {
     "title": "American Indian Law"
@@ -406,11 +430,15 @@ export default {
     "title": "Protection of Individual Rights under State Constitutions Seminar"
    },
    {
-    "title": "Race, Law, and Technology",
-    "note": "Carlisle, Fall 2023"
+    "title": "Race, Law, and Technology: Critical Perspectives, Practical Interventions",
+    "note": "Carlisle offered Fall 2023"
    },
    {
     "title": "Race, Racism and American Law"
+   },
+   {
+    "title": "Trauma Informed Lawyering",
+    "note": "Spring 2027; added to the unified page by 11/04/2026. An LWEXP course on the course chart: experiential, so it can be the 303(c) course only as excess experiential credit (DOUBLE_COUNTING)"
    },
    {
     "title": "Veterans Benefits"
