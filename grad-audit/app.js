@@ -22,7 +22,7 @@ import legacy from "./data/legacy-catalog.js";
 import lists from "./data/intranet-lists.js?v=3";
 import concentrations from "./data/concentrations.js";
 import chart from "./data/course-chart.js";
-import offeringsSpring2027 from "./data/offerings-spring-2027.js";
+import offeringsSpring2027 from "./data/offerings-spring-2027.js?v=2";
 import { parsePdfPages, parseAnyText, extractPdfPages } from "./parser.js?v=3";
 import { runAudit, describeCatalog, statusWord } from "./engine.js?v=5";
 import { sampleTranscriptLines, sampleReportPages, SAMPLE_TERMS } from "./sample.js?v=3";
@@ -272,12 +272,12 @@ function renderPlanner(r) {
         : "Show clinics, externships and independent study (application-only placements).");
     const seats = (s) => s.status ? `${s.status}${s.seats ? ` · ${s.seats.available} of ${s.seats.capacity} open` : ""}` : "see LionPATH";
     const row = (s) => h("tr", {},
-      h("td", { class: "code" }, `${s.code}-${s.section}`, h("div", { class: "ga-muted small" }, `#${s.classNbr}`)),
+      h("td", { class: "code" }, `${s.code}-${s.section}`, h("div", { class: "ga-muted small" }, s.classNbr ? `#${s.classNbr}` : "class # pending")),
       h("td", {}, s.name,
         s.application ? h("span", { class: "ga-tag" }, "application") : null,
         s.note ? h("div", { class: "ga-muted small" }, s.note) : null),
       h("td", { class: "num" }, s.credits === "?" ? h("span", { class: "ga-warn small" }, `check LionPATH (${s.creditsSource})`) : s.credits),
-      h("td", { class: "small" }, s.meets, h("div", { class: "ga-muted" }, s.mode)),
+      h("td", { class: "small" }, s.meets ?? "see LionPATH", h("div", { class: "ga-muted" }, s.mode)),
       h("td", { class: "small" }, seats(s)),
       h("td", { class: "small" }, s.reasons.join("; ")));
     const head = h("thead", {}, h("tr", {}, h("th", {}, "Class"), h("th", {}, "Course"), h("th", { class: "num" }, "Credits"), h("th", {}, "Meets"), h("th", {}, "Status"), h("th", {}, "Would count toward")));

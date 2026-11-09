@@ -9,16 +9,17 @@
  * page then says "check LionPATH"), creditsSource, meets (days, times, room), mode (In person / Zoom /
  * Point-to-point from Carlisle / By arrangement), status and seats (997 sections only, as of readOn),
  * application (true for clinics, externships, independent study: enrolled by the Registrar after an
- * application, never self-enrolled), note.
+ * application, never self-enrolled), note. classNbr and meets are null for a section added after
+ * the LionPATH read; its note says so.
  */
 export default {
- "_readme": "Spring 2027 class sections at University Park, as LionPATH listed them on 11/04/2026 (evening), cross-checked against the Intranet's Spring 2027 Course Updates page (10/28/2026) and the Spring 2027 weekly class schedule. The remaining-semester planner shows these codes and sections instead of the course chart's names. LionPATH is the live source: seats and status change hourly, and status/seats were read only for the Special Topics (997) sections. 1L required sections (LWREQ) and co-curricular placements (LWCUR) are not listed. Externship and Semester-in-Practice sections are collapsed to one line each.",
+ "_readme": "Spring 2027 class sections at University Park, as LionPATH listed them on 11/04/2026 (evening), cross-checked against the Intranet's Spring 2027 Course Updates page (10/28/2026) and the Spring 2027 weekly class schedule. Two sections added on 11/09/2026 from the Course Updates page (updated 11/09/2026) and the Registrar's 11/06/2026 'New Course Offerings' email: LWELA 997-206 Leadership for Lawyers and LWELB 946-201 Information Security Law, both point-to-point from Carlisle. Their class numbers, times and rooms were not read from LionPATH (classNbr and meets are null). The remaining-semester planner shows these codes and sections instead of the course chart's names. LionPATH is the live source: seats and status change hourly, and status/seats were read only for the Special Topics (997) sections. 1L required sections (LWREQ) and co-curricular placements (LWCUR) are not listed. Externship and Semester-in-Practice sections are collapsed to one line each.",
  "term": "Spring 2027",
  "campus": "University Park",
  "readOn": "2026-11-04",
  "sources": {
   "lionpath": "LionPATH > Find Classes and Enroll > Class Search, term Spring 2027, campus University Park, one search per subject (LWELA 30 sections, LWELB 4, LWEXP 15, LWSEM 8, LWCLI 8, LWEXT 15, LWREQ 14, LWINP 1, LWCUR 10; each count matched LionPATH's own 'Penn State Dickinson Law (N)' facet). 997 units/status/seats from each section's Class Information.",
-  "courseUpdates": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Spring%202024%20Course%20Updates.aspx (titled 'Spring 2027 Course Updates', last updated 10/28/2026)",
+  "courseUpdates": "https://pennstateoffice365.sharepoint.com/sites/DickinsonLawIntranet/SitePages/Spring%202024%20Course%20Updates.aspx (titled 'Spring 2027 Course Updates', last updated 10/28/2026; re-read 11/09/2026)",
   "weeklySchedule": "https://psulaw.ofcoursescheduler.com/con/exportDay.php?pac=365176 ('Spring 2027 Weekly Class Schedule' on the Registration Information page; credits per class block)",
   "slides": "SP27-3L Registration-Information-Slides-FINAL (10.16.26).pdf, Registration Information page: registration timeline"
  },
@@ -512,6 +513,21 @@ export default {
    "note": null
   },
   {
+   "code": "LWELA 997",
+   "section": "206",
+   "classNbr": null,
+   "title": "Leadership for Lawyers",
+   "topic": "Leadership for Lawyers",
+   "credits": null,
+   "creditsSource": "not published on the Course Updates page or the Registrar email (11/09/2026)",
+   "meets": null,
+   "mode": "Point-to-point from Carlisle",
+   "status": null,
+   "seats": null,
+   "application": false,
+   "note": "Added after the 11/04 LionPATH read (Intranet Spring 2027 Course Updates, updated 11/09/2026; Registrar email 11/06/2026). Point-to-point from Carlisle. Class number, meeting time and room not yet read from LionPATH: check LionPATH."
+  },
+  {
    "code": "LWELB 900",
    "section": "201",
    "classNbr": "29954",
@@ -555,6 +571,21 @@ export default {
    "seats": null,
    "application": false,
    "note": null
+  },
+  {
+   "code": "LWELB 946",
+   "section": "201",
+   "classNbr": null,
+   "title": "Information Security Law",
+   "topic": null,
+   "credits": 3,
+   "creditsSource": "Bulletin",
+   "meets": null,
+   "mode": "Point-to-point from Carlisle",
+   "status": null,
+   "seats": null,
+   "application": false,
+   "note": "Added after the 11/04 LionPATH read (Intranet Spring 2027 Course Updates, updated 11/09/2026; Registrar email 11/06/2026). Point-to-point from Carlisle. Class number, meeting time and room not yet read from LionPATH: check LionPATH."
   },
   {
    "code": "LWELB 963",
