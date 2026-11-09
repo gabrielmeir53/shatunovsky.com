@@ -467,15 +467,16 @@ test("planner: falls back to the course chart when no verified list covers the t
   assert.ok(r.planner.suggestions.length > 0);
 });
 
-test("offerings data: every section has a code, section, class number and a credit value or a reason", () => {
+test("offerings data: every section has a code, section, class number (or a pending note) and a credit value or a reason", () => {
   for (const s of offeringsSpring2027.sections) {
     assert.match(s.code, /^LW[A-Z]{3} \d{3}$/, s.code);
     assert.match(s.section, /^\d{3}(-\d{3})?$/, `${s.code} section`);
-    assert.match(s.classNbr, /^\d{5}$/, `${s.code} class number`);
+    if (s.classNbr === null) assert.match(s.note ?? "", /not yet read from LionPATH/, `${s.code}-${s.section} pending class number needs a note`);
+    else assert.match(s.classNbr, /^\d{5}$/, `${s.code} class number`);
     assert.ok(s.credits != null || s.creditsSource, `${s.code}-${s.section} credits`);
     assert.equal(s.application, ["LWCLI", "LWEXT", "LWINP"].includes(s.code.split(" ")[0]));
   }
-  assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWELA 997").length, 5);
+  assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWELA 997").length, 6);
   assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWEXP 997").length, 6);
   assert.equal(offeringsSpring2027.sections.filter((s) => s.code === "LWSEM 997").length, 3);
 });
